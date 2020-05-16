@@ -25,7 +25,13 @@ must be only evaluated by a trained technician. For the same reasons, there is
 interest in generating algorithms or models to characterize weights to 
 potentially aid in this process.
 
-<<<<<<< HEAD
+Each measurement of a donkey  consists of the following: the BCS, Age,Sex,Length,Girth,Height,Weight, and WeightAlt. The measuremnts these 
+individual components are clinically important, as these characteristics can 
+help a veterinarian find abnormalities in the health of a donkey, allowing for 
+crucial diagnoses. Previous studies within statistics and machine learning that
+seek to classify donkey weight for varying sizes have applied least-squares
+regression methods (Milner)
+
 ```{r}
 load('donkeys.rda')
 head(donkeys)
@@ -62,12 +68,3 @@ pairs(Weight ~ Length + Girth + Height, data = donkeys)
 pairs(Weight ~ log(Length) + log(Girth) + log(Height), data = donkeys)
 ```
 
-=======
-Each measurement of a donkey  consists of the following: the BCS, Age,Sex,Length,Girth,Height,Weight, and WeightAlt. The measuremnts these 
-individual components are clinically important, as these characteristics can 
-help a veterinarian find abnormalities in the health of a donkey, allowing for 
-crucial diagnoses. Previous studies within statistics and machine learning that
-seek to classify donkey weight for varying sizes have applied least-squares
-regression methods (Milner)
-
-...
