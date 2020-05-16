@@ -5,8 +5,6 @@ date: "5/14/2020"
 output: html_document
 ---
 
-
-
 ## Introduction
 
 Veterinarians give medications to diagnose, treat, or prevent illness. depending 
@@ -26,5 +24,41 @@ it conveys information about all aspects of drug administration, so dosages
 must be only evaluated by a trained technician. For the same reasons, there is 
 interest in generating algorithms or models to characterize weights to 
 potentially aid in this process.
+
+```{r}
+load('donkeys.rda')
+head(donkeys)
+```
+
+```{r}
+# drop BCS = 4.5 and BCS = 1
+donkeys <- subset(donkeys, BCS!=4.5 & BCS!=1)
+```
+
+```{r}
+# mean weights for different donkey sexes
+mean(subset(donkeys, Sex == 'stallion')$Weight)
+mean(subset(donkeys, Sex == 'female')$Weight)
+mean(subset(donkeys, Sex == 'gelding')$Weight)
+```
+
+```{r}
+# Distributions of Quantitative variables
+hist(donkeys$Girth)
+hist(donkeys$Length)
+hist(donkeys$Height)
+hist(donkeys$Weight)
+```
+
+```{r}
+# normal pairs
+pairs(Weight ~ Length + Girth + Height, data = donkeys)
+```
+
+
+```{r}
+# pairs logged 
+pairs(Weight ~ log(Length) + log(Girth) + log(Height), data = donkeys)
+```
 
 
