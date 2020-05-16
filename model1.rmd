@@ -57,12 +57,12 @@ test = data.frame(read.table("test.csv", sep=",", header=TRUE))
 train$BCS <- as.factor(train$BCS)
 train$Age <- as.factor(train$Age)
 train$Sex <- as.factor(train$Sex)
-train$Legs <- train$Height - train$Girth/pi
+#train$Legs <- train$Height - train$Girth/pi
 
 test$BCS <- as.factor(test$BCS)
 test$Age <- as.factor(test$Age)
 test$Sex <- as.factor(test$Sex)
-test$Legs <- test$Height - test$Girth/pi
+#test$Legs <- test$Height - test$Girth/pi
 ```
 
 ```{r}
@@ -150,40 +150,68 @@ plot_histogram(relative_error, "Histogram of Relative Error", FALSE)
 
 # Proposed model 
 
-$$Weight = \beta_0e^{\beta_1I_{[BCS=1.5]}}e^{\beta_2I_{[BCS=2]}}e^{\beta_3I_{[BCS=2.5]}}e^{\beta_4I_{[BCS=3]}}e^{\beta_5I_{[BCS=3.5]}}e^{\beta_6I_{[BCS=4]}}e^{\beta_7I_{[Age<2]}}e^{\beta_8I_{[Age \in [2,5]]}}e^{\beta_9I_{[Age>5]}}Length^{\beta_{10}}Girth^{\beta_{11}}Height^{\beta_{12}}$$
+$$Weight = \beta_0e^{\beta_1I_{[BCS=1.5]}}e^{\beta_2I_{[BCS=2]}}e^{\beta_3I_{[BCS=2.5]}}e^{\beta_4I_{[BCS=3]}}e^{\beta_5I_{[BCS=3.5]}}e^{\beta_6I_{[BCS=4]}}e^{\beta_7I_{[Age<2]}}e^{\beta_8I_{[Age \in [2,5]]}}e^{\beta_9I_{[Age>5]}}e^{\beta_{10}I_{[Sex=female]}}e^{\beta_{11}I_{[Sex=stallion]}}e^{\beta_{12}I_{[Sex=gelding]}}Length^{\beta_{13}}Girth^{\beta_{14}}Height^{\beta_{15}}$$
 
 ## Interpretation 
 
-* Toy example, donkey $i$ with $BCS = 3, \ Age = 3, \ Weight_i = \beta_0e^{\beta_4}e^{\beta_8}Length^{\beta_10}Girth^{\beta_{11}}Height^{\beta_{12}}$
-* In other words, the BCS and Age category of the donkey give proportionate adjustments. These adjustments are determined by which categories the donkey falls into. 
+* Toy example, donkey $i$ with $BCS = 3, \ Age = 3, \ Sex = female, \ Weight_i = \beta_0e^{\beta_4}e^{\beta_8}e^{\beta_{10}}Length^{\beta_13}Girth^{\beta_{14}}Height^{\beta_{15}}$
+* In other words, the BCS, Age and Sex category of the donkey give proportionate adjustments. These adjustments are determined by which categories the donkey falls into. 
 * If we assume the donkey to be cylindrical and of uniform density, we expect $\beta_{10} \sim 1, \beta_{11} \sim 2$, unlike values that were given in original model.
-* $Height^{\beta_{12}}$ is a proxy for frame of body, and therefore, the proportion of volume that consists of bones. This gives a proportionate adjustment to the weight.
+* $Height^{\beta_{15}}$ is a proxy for frame of body, and therefore, the proportion of volume that consists of bones. This gives a proportionate adjustment to the weight.
 * It is worthwhile to note that as Length, Girth, or Height tends to 0, our model also predicts that weight tends to 0, unlike the previous model.
-* ToDo: Justify the lack of sex, perhaps using backward selection on this new model. This backward selection could also provide justification for keeping Height in the model, unlike the original model.
+* Also note that we can set $\beta_1, \beta_7, \beta_{10}$ to 0, since all the other categorical betas can be defined to be proportionate to these values, and we can adjust $\beta_0$ accordingly. This helps in understanding R's output. 
+
+#Run model
+
+```{r}
+model = lm(log(Weight) ~ BCS + Age + Sex + log(Length) + log(Girth) + log(Height), data=train)
+summary(model)
+```
+
+* We note that the beta values for sex is very low, and the p-values are relatively high. This gives us motivation to do variable selection.
+
+# Backwards Selection
+
+```{r}
+model = lm(log(Weight) ~ BCS + Age + Sex + log(Length) + log(Girth) + log(Height), data=train)
+
+stepwise = ols_step_both_aic(model)
+stepwise
+
+forward = ols_step_forward_aic(model)
+forward
+
+backward = ols_step_backward_aic(model)
+backward
+```
+
+* We see that indeed, sex is irrelevant. However, unlike the original paper, Height seems to be relevant.
+
+# New proposed model 
+
+$$Weight = \beta_0e^{\beta_1I_{[BCS=2]}}e^{\beta_2I_{[BCS=2.5]}}e^{\beta_3I_{[BCS=3]}}e^{\beta_4I_{[BCS=3.5]}}e^{\beta_5I_{[BCS=4]}}e^{\beta_6I_{[Age \in [2,5]]}}e^{\beta_7I_{[Age>5]}}Length^{\beta_{8}}Girth^{\beta_{9}}Height^{\beta_{10}}$$
 
 # Run model
 
-* ToDo: Find out if lm implements above model for factors BCS and Age. I believe it does. 
-
 ```{r}
 #m5 = lm(log(Weight) ~ BCS + Age + log(0.778*Length*(Girth^2) + 2.88*Legs), data=train)
-m5 = lm(log(Weight) ~ BCS + Age + log(Length) + log(Girth) + log(Height), data=train)
-#m5 = lm(Weight ~ Length*Girth^2, data=train)
-summary(m5)
+model = lm(log(Weight) ~ BCS + Age + log(Length) + log(Girth) + log(Height), data=train)
+summary(model)
 ```
 
-* We note that we get $\beta_{10} = 0.611, \beta_{11} = 1.47$, which are not equal to our idealized model, but close. This could indicate a cylinder with a "fatter" center, and a more ellipsoidal body. 
+* We note that indeed, height is important. (Conjecture a few reasons why)
+* We also note that we get $\beta_{10} = 0.611, \beta_{11} = 1.47$, which are not equal to our idealized model, but close. This could indicate a cylinder with a "fatter" center, and a more ellipsoidal body. 
 
 # Diagnostics (ideally we can do this for previous model too)
 
 ```{r}
-plot(m5)
+plot(model)
 ```
 
 * Everything looks good, except scale-location plot. 
 
 ```{r}
-bptest(m5)
+bptest(model)
 ```
 
 * Breusch-Pagan test indicates, that at a 5% level of significance, that heterscedasticity exists, so we should be fine for the scale-location plot.
@@ -191,7 +219,7 @@ bptest(m5)
 # Obtain results
 
 ```{r}
-predictions = predict.lm(m5, test, interval="confidence")
+predictions = predict.lm(model, test, interval="confidence")
 residuals = exp(predictions[,1]) - test$Weight
 MSE = mean(residuals^2)
 print(MSE)
@@ -208,4 +236,11 @@ plot_histogram(relative_error, "Histogram of Relative Error", FALSE)
 
 * Our model has a slightly higher concentration of residues and relative errors towards the center, as reflected by our calculated values. It is significant to notice that this difference is more pronounced for negative residues/relative errors. If we follow the paper and assign an assymmetric loss curve that weights negative residues/errors more heavily, our model would be even better. 
 
-* ToDo: Sensitivity analysis.
+# Sanity check that lm treats factors as hypothesized
+
+```{r}
+print(-7.40509+0.09277+0.61071*log(80)+1.46666*log(94)+0.54297*log(89))
+print(predictions[1,1])
+```
+
+# ToDo: Sensitivity analysis.
