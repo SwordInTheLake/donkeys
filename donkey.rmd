@@ -5,8 +5,6 @@ date: "5/14/2020"
 output: html_document
 ---
 
-
-
 ## Introduction
 
 Veterinarians give medications to diagnose, treat, or prevent illness. depending 
@@ -34,28 +32,47 @@ crucial diagnoses. Previous studies within statistics and machine learning that
 seek to classify donkey weight for varying sizes have applied least-squares
 regression methods (Milner)
 
+In our project, we borrow a linear model proposed by Milner and apply it to 
+interpret the error for the estimates in the model parameters for an appropriate 
+weight. To do so, we accomplished the following:
+
+
+
 
 
 ```{r}
+load('donkeys.rda')
 head(donkeys)
 ```
 
+```{r}
+# drop BCS = 4.5 and BCS = 1
+donkeys <- subset(donkeys, BCS!=4.5 & BCS!=1)
+```
 
 ```{r}
-# pairs(Weight~BCS + Age + Sex + Length + Girth + Height, data = donkeys)
-pairs(Weight~Length + Girth + Height, data = donkeys)
+# mean weights for different donkey sexes
+mean(subset(donkeys, Sex == 'stallion')$Weight)
+mean(subset(donkeys, Sex == 'female')$Weight)
+mean(subset(donkeys, Sex == 'gelding')$Weight)
+```
+
+```{r}
+# Distributions of Quantitative variables
+hist(donkeys$Girth)
+hist(donkeys$Length)
+hist(donkeys$Height)
+hist(donkeys$Weight)
+```
+
+```{r}
+# normal pairs
+pairs(Weight ~ Length + Girth + Height, data = donkeys)
 ```
 
 
-
 ```{r}
-m1 = lm(Weight~ ., data=donkeys)
-summary(m1)
-```
-
-
-
-```{r}
-summary(m1)
+# pairs logged 
+pairs(Weight ~ log(Length) + log(Girth) + log(Height), data = donkeys)
 ```
 
