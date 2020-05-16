@@ -10,7 +10,7 @@ output: html_document
 ## Introduction
 
 Veterinarians give medications to diagnose, treat, or prevent illness. depending 
-on the specific ailment drugs come in different forms and are administered take 
+on the specific ailment, drugs come in different forms and are administered take 
 them in many different ways. With the dangers of farmers attempting to prescribe 
 dosages themselves, they depend on healthcare providers to understand the right 
 way to administer them and reduce the risks. Depending on the size and 
@@ -27,6 +27,12 @@ must be only evaluated by a trained technician. For the same reasons, there is
 interest in generating algorithms or models to characterize weights to 
 potentially aid in this process.
 
+Each measurement of a donkey  consists of the following: the BCS, Age,Sex,Length,Girth,Height,Weight, and WeightAlt. The measuremnts these 
+individual components are clinically important, as these characteristics can 
+help a veterinarian find abnormalities in the health of a donkey, allowing for 
+crucial diagnoses. Previous studies within statistics and machine learning that
+seek to classify donkey weight for varying sizes have applied least-squares
+regression methods (Milner)
 
 
 
@@ -52,3 +58,4 @@ summary(m1)
 ```{r}
 summary(m1)
 ```
+
