@@ -28,3 +28,27 @@ interest in generating algorithms or models to characterize weights to
 potentially aid in this process.
 
 
+
+
+```{r}
+head(donkeys)
+```
+
+
+```{r}
+# pairs(Weight~BCS + Age + Sex + Length + Girth + Height, data = donkeys)
+pairs(Weight~Length + Girth + Height, data = donkeys)
+```
+
+
+
+```{r}
+m1 = lm(Weight~ ., data=donkeys)
+summary(m1)
+```
+
+
+
+```{r}
+summary(m1)
+```
