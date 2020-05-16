@@ -164,8 +164,8 @@ $$Weight = \beta_0e^{\beta_1I_{[BCS=1.5]}}e^{\beta_2I_{[BCS=2]}}e^{\beta_3I_{[BC
 #Run model
 
 ```{r}
-model = lm(log(Weight) ~ BCS + Age + Sex + log(Length) + log(Girth) + log(Height), data=train)
-summary(model)
+model.prop = lm(log(Weight) ~ BCS + Age + Sex + log(Length) + log(Girth) + log(Height), data=train)
+summary(model.prop)
 ```
 
 * We note that the beta values for sex is very low, and the p-values are relatively high. This gives us motivation to do variable selection.
@@ -215,6 +215,12 @@ bptest(model)
 ```
 
 * Breusch-Pagan test indicates, that at a 5% level of significance, that heterscedasticity exists, so we should be fine for the scale-location plot.
+
+```{r}
+plot(model.prop)
+```
+
+* Proposed model results in similar diagnostics as our final model- a quick look at the coefficient values shows us almost identical coefficients. 
 
 # Obtain results
 

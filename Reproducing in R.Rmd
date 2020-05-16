@@ -1,0 +1,74 @@
+---
+title: "Reproducing in R"
+author: "Team"
+date: "5/14/2020"
+output: html_document
+---
+
+```{r}
+library(dplyr)
+library(ggplot2)
+library(olsrr)
+library(lmtest)
+library(numbers)
+```
+
+```{r}
+# read in data 
+donkeys = read.csv("mysavefile.csv")
+
+# drop BCS = 4.5 and BCS = 1
+donkeys <- subset(donkeys, BCS!=4.5 & BCS!=1)
+
+# drop baby donkey 
+donkeys <- subset(donkeys, Weight != 27)
+
+# train-test split
+train <- NULL
+test <- NULL 
+for(i in 1:nrow(donkeys)){
+  if (mod(i-1,5) == 4){
+    test <- rbind(test, donkeys[i,])
+  }
+  else{
+    train <- rbind(train, donkeys[i,])
+  }
+}
+# dropping some values to match their training set
+train_reproducing <- subset(train, BCS==3)
+train_reproducing <- subset(train_reproducing, Age!='<2')
+train_reproducing <- subset(train_reproducing, Age!='2-5')
+
+# The following are the csvs on our github (from Notebook)- they give different results than the code above 
+#train_dan = data.frame(read.table("train.csv", sep=",", header=TRUE))
+#test_dan = data.frame(read.table("test.csv", sep=",", header=TRUE))
+#train_reproducing = data.frame(read.table("train_reproducing.csv", sep=",", header = TRUE))
+```
+
+```{r}
+model.rep = lm(2*(sqrt(Weight)-1) ~ log(Length) + log(Girth), data=train_reproducing)
+summary(model.rep)
+```
+
+* Note that the values obtained are significantly different
+* b0_given = -107
+* b1_given = 19.91
+* b2_given = 7.712
+
+```{r}
+predictions = predict.lm(model.rep, test)
+predicted = ((predictions/2) + 1)^2
+```
+
+```{r}
+ggplot(test, aes(x = predicted, y = Weight)) + geom_point(color = "red") + xlim(75,225) + ylim(75,225) + geom_abline(intercept = 0, slope = 1, size=0.9) + 
+geom_abline(intercept = 0, slope = 1.1, color="gray", linetype = "dashed", size=1) + 
+geom_abline(intercept = 0, slope = .9, color="gray", linetype = "dashed", size=1) + 
+geom_abline(intercept = 0, slope = .8, color="gray", linetype = "dotted", size=1) + 
+geom_abline(intercept = 0, slope = 1.2, color="gray", linetype = "dotted", size=1) + 
+scale_x_continuous(name = "Predicted", breaks = seq(75,225,25), limits = c(75,225)) + 
+scale_y_continuous(name = "Actual Weights", breaks = seq(75,225,25), limits = c(75,225))
+```
+
+
+

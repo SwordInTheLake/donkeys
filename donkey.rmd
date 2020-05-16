@@ -38,7 +38,6 @@ weight. To do so, we accomplished the following:
 
 
 
-
 # Load in data
 
 ```{r}
@@ -66,17 +65,14 @@ donkeys <- subset(donkeys, BCS!=4.5 & BCS!=1)
 donkeys <- subset(donkeys, Weight != 27)
 ```
 
+# EDA
+
 ```{r}
 # mean weights for different donkey sexes
 mean(subset(donkeys, Sex == 'stallion')$Weight)
 mean(subset(donkeys, Sex == 'female')$Weight)
 mean(subset(donkeys, Sex == 'gelding')$Weight)
 ```
-
-
-
-
-# EDA
 
 ```{r}
 # pairs(Weight~BCS + Age + Sex + Length + Girth + Height, data = donkeys)
