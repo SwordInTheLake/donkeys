@@ -34,12 +34,15 @@ regression methods (Milner)
 
 ```{r}
 load('donkeys.rda')
-head(donkeys)
+donkeys
 ```
 
 ```{r}
 # drop BCS = 4.5 and BCS = 1
 donkeys <- subset(donkeys, BCS!=4.5 & BCS!=1)
+
+# drop baby donkey 
+donkeys <- subset(donkeys, Weight != 27)
 ```
 
 ```{r}
@@ -67,4 +70,17 @@ pairs(Weight ~ Length + Girth + Height, data = donkeys)
 # pairs logged 
 pairs(Weight ~ log(Length) + log(Girth) + log(Height), data = donkeys)
 ```
+
+# Reproducing Modeling
+```{r}
+train = read.csv("train.csv")
+train
+```
+
+
+```{r}
+model <- lm(2*(sqrt(Weight)-1) ~ log(Length) + log(Girth), data=train)
+summary(model)
+```
+
 
