@@ -1,0 +1,211 @@
+---
+title: "Donkey"
+author: "Team"
+date: "5/14/2020"
+output: html_document
+---
+
+## Introduction
+
+Veterinarians give medications to diagnose, treat, or prevent illness. depending 
+on the specific ailment, drugs come in different forms and are administered take 
+them in many different ways. With the dangers of farmers attempting to prescribe 
+dosages themselves, they depend on healthcare providers to understand the right 
+way to administer them and reduce the risks. Depending on the size and 
+temperament of an animal, say a dog versus a donkey, it may be easier
+or harder to weigh animals directly. Over the years methods have been developed to
+weigh a donkey indirectly using simple measuring devices and use these
+measurements to approximate the weight of the donkey.
+
+Estimating donkey weights data is an incredibly important task in the lives of
+these farmers who depend on donkeys to deliver items ranging from building 
+materials to textiles. A  donkey weight is not relatively complicated and but 
+it conveys information about all aspects of drug administration, so dosages 
+must be only evaluated by a trained technician. For the same reasons, there is 
+interest in generating algorithms or models to characterize weights to 
+potentially aid in this process.
+
+Each measurement of a donkey  consists of the following: the BCS, Age,Sex,Length,Girth,Height,Weight, and WeightAlt. The measuremnts these 
+individual components are clinically important, as these characteristics can 
+help a veterinarian find abnormalities in the health of a donkey, allowing for 
+crucial diagnoses. Previous studies within statistics and machine learning that
+seek to classify donkey weight for varying sizes have applied least-squares
+regression methods (Milner)
+
+In our project, we borrow a linear model proposed by Milner and apply it to 
+interpret the error for the estimates in the model parameters for an appropriate 
+weight. To do so, we accomplished the following:
+
+
+```{r}
+library(dplyr)
+library(ggplot2)
+library(olsrr)
+library(lmtest)
+```
+
+
+# Load in data
+
+```{r}
+load('donkeys.rda')
+head(donkeys)
+
+train = data.frame(read.table("train.csv", sep=",", header=TRUE))
+test = data.frame(read.table("test.csv", sep=",", header=TRUE))
+
+train$BCS <- as.factor(train$BCS)
+train$Age <- as.factor(train$Age)
+train$Sex <- as.factor(train$Sex)
+train$Legs <- train$Height - train$Girth/pi
+
+test$BCS <- as.factor(test$BCS)
+test$Age <- as.factor(test$Age)
+test$Sex <- as.factor(test$Sex)
+test$Legs <- test$Height - test$Girth/pi
+```
+
+```{r}
+# drop BCS = 4.5 and BCS = 1
+donkeys <- subset(donkeys, BCS!=4.5 & BCS!=1)
+
+# drop baby donkey 
+donkeys <- subset(donkeys, Weight != 27)
+```
+
+```{r}
+# mean weights for different donkey sexes
+mean(subset(donkeys, Sex == 'stallion')$Weight)
+mean(subset(donkeys, Sex == 'female')$Weight)
+mean(subset(donkeys, Sex == 'gelding')$Weight)
+```
+
+# EDA
+
+```{r}
+# pairs(Weight~BCS + Age + Sex + Length + Girth + Height, data = donkeys)
+pairs(Weight~Length + Girth + Height, data = train)
+```
+
+
+```{r}
+# Distributions of Quantitative variables
+hist(donkeys$Girth)
+hist(donkeys$Length)
+hist(donkeys$Height)
+hist(donkeys$Weight)
+```
+
+# Reproducing results in paper
+
+```{r}
+f = -107 + 19.91*log(test$Girth)
+g = 7.712*log(test$Length)
+raw_weight = (((f+g)/2) + 1)^2
+```
+
+```{r}
+age_adjustment <- function(num){
+  list = c(-8,0,0,0,-4,0)
+  return(list[num])
+}
+bcs_adjustment <- function(num){
+  list = c(-6,-5,0,6,14)
+  return(list[num])
+}
+age = sapply(as.numeric(test$Age),age_adjustment)
+bcs = sapply(as.numeric(test$BCS),bcs_adjustment)
+```
+
+```{r}
+predictions = raw_weight + age + bcs
+residuals = predictions - test$Weight
+MSE = mean(residuals^2)
+print(MSE)
+relative_error = predictions/test$Weight
+print(mean((relative_error-1)^2))
+```
+
+```{r}
+plot_histogram <- function(list, title, subdivide){
+  if (subdivide){
+    h <- hist(list, main=title, breaks = 16)
+  }
+  else{
+    h <- hist(list, main=title)
+  }
+  text(h$mids,h$counts,labels=h$counts, adj=c(0.5, -0.5))
+}
+plot_histogram(residuals, "Histogram of Residuals", TRUE)
+plot_histogram(relative_error, "Histogram of Relative Error", FALSE)
+```
+
+# Issues/Notes with model
+
+* Cannot reproduce ols values. 
+* Model is not interpretable. Values and transformations do not make sense.
+* Additive adjustments are less plausible physiologically as compared to proportionate adjustments.
+* Presence of extreme residuals, especially negative ones. If we look at the graph provided in the paper, negative residuals should have a high loss due to the risk of overdosing of anaesthesia, even more so than positive residuals. 
+* Paper addresses this by only providing relative errors, because the given model has high residuals when the weight of donkey is high. If we believe that the dangers of prediction errors are due to anaesthesia and wormers, it is unclear if risks are more sensitive to absolute or relative errors. 
+
+# Proposed model 
+
+$$Weight = \beta_0e^{\beta_1I_{[BCS=1.5]}}e^{\beta_2I_{[BCS=2]}}e^{\beta_3I_{[BCS=2.5]}}e^{\beta_4I_{[BCS=3]}}e^{\beta_5I_{[BCS=3.5]}}e^{\beta_6I_{[BCS=4]}}e^{\beta_7I_{[Age<2]}}e^{\beta_8I_{[Age \in [2,5]]}}e^{\beta_9I_{[Age>5]}}Length^{\beta_{10}}Girth^{\beta_{11}}Height^{\beta_{12}}$$
+
+## Interpretation 
+
+* Toy example, donkey $i$ with $BCS = 3, \ Age = 3, \ Weight_i = \beta_0e^{\beta_4}e^{\beta_8}Length^{\beta_10}Girth^{\beta_{11}}Height^{\beta_{12}}$
+* In other words, the BCS and Age category of the donkey give proportionate adjustments. These adjustments are determined by which categories the donkey falls into. 
+* If we assume the donkey to be cylindrical and of uniform density, we expect $\beta_{10} \sim 1, \beta_{11} \sim 2$, unlike values that were given in original model.
+* $Height^{\beta_{12}}$ is a proxy for frame of body, and therefore, the proportion of volume that consists of bones. This gives a proportionate adjustment to the weight.
+* It is worthwhile to note that as Length, Girth, or Height tends to 0, our model also predicts that weight tends to 0, unlike the previous model.
+* ToDo: Justify the lack of sex, perhaps using backward selection on this new model.
+
+# Run model
+
+* ToDo: Find out if lm implements above model for factors BCS and Age. I believe it does. 
+
+```{r}
+#m5 = lm(log(Weight) ~ BCS + Age + log(0.778*Length*(Girth^2) + 2.88*Legs), data=train)
+m5 = lm(log(Weight) ~ BCS + Age + log(Length) + log(Girth) + log(Height), data=train)
+#m5 = lm(Weight ~ Length*Girth^2, data=train)
+summary(m5)
+```
+
+* We note that we get $\beta_{10} = 0.611, \beta_{11} = 1.47$, which are not equal to our idealized model, but close. This could indicate a cylinder with a "fatter" center, and a more ellipsoidal body. 
+
+# Diagnostics (ideally we can do this for previous model too)
+
+```{r}
+plot(m5)
+```
+
+* Everything looks good, except scale-location plot. 
+
+```{r}
+bptest(m5)
+```
+
+* Breusch-Pagan test indicates, that at a 5% level of significance, that heterscedasticity exists, so we should be fine for the scale-location plot.
+
+# Obtain results
+
+```{r}
+predictions = predict.lm(m5, test, interval="confidence")
+residuals = exp(predictions[,1]) - test$Weight
+MSE = mean(residuals^2)
+print(MSE)
+relative_error = exp(predictions[,1])/test$Weight
+print(mean((relative_error-1)^2))
+```
+
+*We note a modest reduction in MSE, and a reduction in relative error too. Our model is comparable/better than the given model.
+
+```{r}
+plot_histogram(residuals, "Histogram of Residuals", FALSE)
+plot_histogram(relative_error, "Histogram of Relative Error", FALSE)
+```
+
+* Our model has a slightly higher concentration of residues and relative errors towards the center, as reflected by our calculated values. It is significant to notice that this difference is more pronounced for negative residues/relative errors. If we follow the paper and assign an assymmetric loss curve that weights negative residues/errors more heavily, our model would be even better. 
+
+* ToDo: Sensitivity analysis.
