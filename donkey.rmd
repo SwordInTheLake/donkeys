@@ -32,6 +32,14 @@ crucial diagnoses. Previous studies within statistics and machine learning that
 seek to classify donkey weight for varying sizes have applied least-squares
 regression methods (Milner)
 
+In our project, we borrow a linear model proposed by Milner and apply it to 
+interpret the error for the estimates in the model parameters for an appropriate 
+weight. To do so, we accomplished the following:
+
+
+
+
+
 ```{r}
 load('donkeys.rda')
 donkeys
