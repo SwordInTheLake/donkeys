@@ -7,8 +7,24 @@ output: html_document
 
 
 
-```{r}
+## Introduction
 
+Veterinarians give medications to diagnose, treat, or prevent illness. depending 
+on the specific ailment drugs come in different forms and are administered take 
+them in many different ways. With the dangers of farmers attempting to prescribe 
+dosages themselves, they depend on healthcare providers to understand the right 
+way to administer them and reduce the risks. Depending on the size and 
+temperament of an animal, say a dog versus a donkey, it may be easier
+or harder to weigh animals directly. Over the years methods have been developed to
+weigh a donkey indirectly using simple measuring devices and use these
+measurements to approximate the weight of the donkey.
 
-```
+Estimating donkey weights data is an incredibly important task in the lives of
+these farmers who depend on donkeys to deliver items ranging from building 
+materials to textiles. A  donkey weight is not relatively complicated and but 
+it conveys information about all aspects of drug administration, so dosages 
+must be only evaluated by a trained technician. For the same reasons, there is 
+interest in generating algorithms or models to characterize weights to 
+potentially aid in this process.
+
 
