@@ -39,10 +39,23 @@ weight. To do so, we accomplished the following:
 
 
 
+# Load in data
 
 ```{r}
 load('donkeys.rda')
 head(donkeys)
+
+train = data.frame(read.table("train.csv", sep=",", header=TRUE))
+test = data.frame(read.table("test.csv", sep=",", header=TRUE))
+
+train$BCS <- as.factor(train$BCS)
+train$Age <- as.factor(train$Age)
+train$Sex <- as.factor(train$Sex)
+
+test$BCS <- as.factor(test$BCS)
+test$Age <- as.factor(test$Age)
+test$Sex <- as.factor(test$Sex)
+
 ```
 
 ```{r}
@@ -57,12 +70,31 @@ mean(subset(donkeys, Sex == 'female')$Weight)
 mean(subset(donkeys, Sex == 'gelding')$Weight)
 ```
 
+
+
+
+# EDA
+
+```{r}
+# pairs(Weight~BCS + Age + Sex + Length + Girth + Height, data = donkeys)
+pairs(Weight~Length + Girth + Height, data = train)
+```
+
+
 ```{r}
 # Distributions of Quantitative variables
 hist(donkeys$Girth)
 hist(donkeys$Length)
 hist(donkeys$Height)
 hist(donkeys$Weight)
+```
+
+
+# Naive full model
+
+```{r}
+m1 = lm(Weight~ BCS + Age + Sex + Length + Girth + Height, data=train)
+summary(m1)
 ```
 
 ```{r}
@@ -74,5 +106,86 @@ pairs(Weight ~ Length + Girth + Height, data = donkeys)
 ```{r}
 # pairs logged 
 pairs(Weight ~ log(Length) + log(Girth) + log(Height), data = donkeys)
+predictions = predict.lm(m1, test, interval="confidence")
+```
+
+```{r}
+residuals = predictions[,1] - test$Weight
+MSE = mean(residuals^2)
+MSE
+```
+
+```{r}
+test <- test %>% mutate(Residuals = residuals, Predictions=predictions[,1])
+ggplot(data=test, aes(x=Predictions, y=Residuals)) + geom_point() +
+  geom_hline(yintercept=0,color="red") + 
+  labs(title="Residuals vs. Predictions") + 
+  theme(plot.title=element_text(hjust=0.5))
+```
+
+```{r}
+library(olsrr)
+stepwise = ols_step_both_aic(m1)
+stepwise
+
+forward = ols_step_forward_aic(m1)
+forward
+
+backward = ols_step_backward_aic(m1)
+backward
+```
+
+
+# Getting rid of sex
+
+```{r}
+m2 = lm(Weight~ BCS + Age  + Length + Girth + Height, data=train)
+summary(m2)
+```
+
+
+```{r}
+predictions = predict.lm(m2, test, interval="confidence")
+```
+
+```{r}
+residuals = predictions[,1] - test$Weight
+MSE = mean(residuals^2)
+MSE
+```
+
+```{r}
+test <- test %>% mutate(Residuals = residuals, Predictions=predictions[,1])
+ggplot(data=test, aes(x=Predictions, y=Residuals)) + geom_point() +
+  geom_hline(yintercept=0,color="red") + 
+  labs(title="Residuals vs. Predictions") + 
+  theme(plot.title=element_text(hjust=0.5))
+```
+
+# 
+
+
+```{r}
+m3 = lm(Weight~ BCS + Age + log(Length) + log(Girth) + log(Height), data=train)
+summary(m3)
+```
+
+
+```{r}
+predictions = predict.lm(m3, test, interval="confidence")
+```
+
+```{r}
+residuals = predictions[,1] - test$Weight
+MSE = mean(residuals^2)
+MSE
+```
+
+```{r}
+test <- test %>% mutate(Residuals = residuals, Predictions=predictions[,1])
+ggplot(data=test, aes(x=Predictions, y=Residuals)) + geom_point() +
+  geom_hline(yintercept=0,color="red") + 
+  labs(title="Residuals vs. Predictions") + 
+  theme(plot.title=element_text(hjust=0.5))
 ```
 
