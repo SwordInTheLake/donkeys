@@ -81,14 +81,15 @@ pairs(Weight ~ log(Length) + log(Girth) + log(Height), data = donkeys)
 
 # Reproducing Modeling
 ```{r}
-train = read.csv("train.csv")
-train
+train_reproducing = read.csv("train_reproducing.csv")
+train_reproducing
 ```
 
 
 ```{r}
-model <- lm(2*(sqrt(Weight)-1) ~ log(Length) + log(Girth), data=train)
+model <- lm(2*(sqrt(Weight)-1) ~ log(Length) + log(Girth), data=train_reproducing)
 summary(model)
 ```
+
 
 
