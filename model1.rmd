@@ -159,7 +159,7 @@ $$Weight = \beta_0e^{\beta_1I_{[BCS=1.5]}}e^{\beta_2I_{[BCS=2]}}e^{\beta_3I_{[BC
 * If we assume the donkey to be cylindrical and of uniform density, we expect $\beta_{10} \sim 1, \beta_{11} \sim 2$, unlike values that were given in original model.
 * $Height^{\beta_{12}}$ is a proxy for frame of body, and therefore, the proportion of volume that consists of bones. This gives a proportionate adjustment to the weight.
 * It is worthwhile to note that as Length, Girth, or Height tends to 0, our model also predicts that weight tends to 0, unlike the previous model.
-* ToDo: Justify the lack of sex, perhaps using backward selection on this new model.
+* ToDo: Justify the lack of sex, perhaps using backward selection on this new model. This backward selection could also provide justification for keeping Height in the model, unlike the original model.
 
 # Run model
 
