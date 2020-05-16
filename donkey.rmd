@@ -61,6 +61,9 @@ test$Sex <- as.factor(test$Sex)
 ```{r}
 # drop BCS = 4.5 and BCS = 1
 donkeys <- subset(donkeys, BCS!=4.5 & BCS!=1)
+
+# drop baby donkey 
+donkeys <- subset(donkeys, Weight != 27)
 ```
 
 ```{r}
@@ -188,4 +191,18 @@ ggplot(data=test, aes(x=Predictions, y=Residuals)) + geom_point() +
   labs(title="Residuals vs. Predictions") + 
   theme(plot.title=element_text(hjust=0.5))
 ```
+
+# Reproducing Modeling
+```{r}
+train_reproducing = read.csv("train_reproducing.csv")
+train_reproducing
+```
+
+
+```{r}
+model <- lm(2*(sqrt(Weight)-1) ~ log(Length) + log(Girth), data=train_reproducing)
+summary(model)
+```
+
+
 
