@@ -35,6 +35,16 @@ for(i in 1:nrow(donkeys)){
     train <- rbind(train, donkeys[i,])
   }
 }
+
+train$BCS <- as.factor(train$BCS)
+train$Age <- as.factor(train$Age)
+train$Sex <- as.factor(train$Sex)
+#train$Legs <- train$Height - train$Girth/pi
+
+test$BCS <- as.factor(test$BCS)
+test$Age <- as.factor(test$Age)
+test$Sex <- as.factor(test$Sex)
+
 # dropping some values to match their training set
 train_reproducing <- subset(train, BCS==3)
 train_reproducing <- subset(train_reproducing, Age!='<2')
@@ -57,8 +67,51 @@ summary(model.rep)
 * b2_given = 7.712
 
 ```{r}
-predictions = predict.lm(model.rep, test)
-predicted = ((predictions/2) + 1)^2
+f = -107 + 19.91*log(test$Girth)
+g = 7.712*log(test$Length)
+raw_weight = (((f+g)/2) + 1)^2
+```
+
+```{r}
+age_adjustment <- function(num){
+  list = c(-8,0,0,0,-4,0)
+  return(list[num])
+}
+bcs_adjustment <- function(num){
+  list = c(-6,-5,0,6,14)
+  return(list[num])
+}
+age = sapply(as.numeric(test$Age),age_adjustment)
+bcs = sapply(as.numeric(test$BCS),bcs_adjustment)
+```
+
+```{r}
+predicted = raw_weight + age + bcs
+residuals = predicted - test$Weight
+MSE = mean(residuals^2)
+print(MSE)
+relative_error = predictions/test$Weight
+print(mean((relative_error-1)^2))
+```
+
+```{r}
+plot_histogram <- function(list, title, subdivide){
+  if (subdivide){
+    h <- hist(list, main=title, breaks = 16)
+  }
+  else{
+    h <- hist(list, main=title)
+  }
+  text(h$mids,h$counts,labels=h$counts, adj=c(0.5, -0.5))
+}
+plot_histogram(residuals, "Histogram of Residuals", TRUE)
+plot_histogram(relative_error, "Histogram of Relative Error", FALSE)
+```
+
+
+```{r}
+#predictions = predict.lm(model.rep, test)
+#predicted = ((predictions/2) + 1)^2
 ```
 
 ```{r}
