@@ -22,12 +22,13 @@ donkeys <- subset(donkeys, BCS!=4.5 & BCS!=1)
 
 # drop baby donkey 
 donkeys <- subset(donkeys, Weight != 27)
+donkeys <- donkeys[order(donkeys$Weight),]
 
 # train-test split
 train <- NULL
 test <- NULL 
 for(i in 1:nrow(donkeys)){
-  if (mod(i-1,5) == 4){
+  if (mod(i,5) == 0){
     test <- rbind(test, donkeys[i,])
   }
   else{
