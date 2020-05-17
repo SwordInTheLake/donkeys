@@ -1,0 +1,52 @@
+---
+title: "Donkey Project Report"
+output: html_document
+---
+
+
+# Case Study 1: Dosing Donkeys
+
+
+## Introduction
+
+Veterinarians give medications to diagnose, treat, or prevent illness. depending 
+on the specific ailment, drugs come in different forms and are administered take 
+them in many different ways. With the dangers of farmers attempting to prescribe 
+dosages themselves, they depend on healthcare providers to understand the right 
+way to administer them and reduce the risks. Depending on the size and 
+temperament of an animal, say a dog versus a donkey, it may be easier
+or harder to weigh animals directly. Over the years methods have been developed to
+weigh a donkey indirectly using simple measuring devices and use these
+measurements to approximate the weight of the donkey.
+
+Estimating donkey weights data is an incredibly important task in the lives of
+these farmers who depend on donkeys to deliver items ranging from building 
+materials to textiles. A  donkey weight is not relatively complicated and but 
+it conveys information about all aspects of drug administration, so dosages 
+must be only evaluated by a trained technician. For the same reasons, there is 
+interest in generating algorithms or models to characterize weights to 
+potentially aid in this process.
+
+Each measurement of a donkey  consists of the following: the BCS, Age,Sex,Length,Girth,Height,Weight, and WeightAlt. The measuremnts these 
+individual components are clinically important, as these characteristics can 
+help a veterinarian find abnormalities in the health of a donkey, allowing for 
+crucial diagnoses. Previous studies within statistics and machine learning that
+seek to classify donkey weight for varying sizes have applied least-squares
+regression methods [1]
+
+In our project, we borrow a linear model proposed by Milner and apply it to 
+interpret the error for the estimates in the model parameters for an appropriate 
+weight. To do so, we accomplished the following:
+
+
+1. Code from scratch the Models and Loss-Functions proposed by Rougier et.al. [1] 
+
+2. Determine appropriate proposal distributions and model diagnostics which the authors did not specify.
+
+3. Replicate the weighing algorithm (a well-established predictor detector used for Kenyan farmers) which allows us indirectly weigh the donekys within a set error bound . [1] (Refer to fullcode in Appendix II).
+
+
+4. Run cross validation and sesntivty anaylsis for the propsded data sets  and calculate the predicted model parameter values.
+
+
+## Data
