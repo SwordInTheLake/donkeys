@@ -1,0 +1,317 @@
+---
+title: "Donkeys Code"
+author: "Team"
+date: "5/17/2020"
+output: html_document
+---
+
+```{r}
+library(dplyr)
+library(ggplot2)
+library(olsrr)
+library(lmtest)
+library(numbers)
+library(paranomo)
+```
+
+```{r}
+# Read in donkeys
+donkeys <- data.frame(donkeys)
+
+# drop BCS = 4.5 and BCS = 1
+donkeys <- subset(donkeys, BCS!=4.5 & BCS!=1)
+
+# drop baby donkey 
+donkeys <- subset(donkeys, Weight != 27)
+donkeys <- donkeys[order(donkeys$Weight),]
+
+# train-test split
+train <- NULL
+test <- NULL 
+for(i in 1:nrow(donkeys)){
+  if (mod(i,5) == 0){
+    test <- rbind(test, donkeys[i,])
+  }
+  else{
+    train <- rbind(train, donkeys[i,])
+  }
+}
+
+train$BCS <- as.factor(train$BCS)
+train$Age <- as.factor(train$Age)
+train$Sex <- as.factor(train$Sex)
+#train$Legs <- train$Height - train$Girth/pi
+
+test$BCS <- as.factor(test$BCS)
+test$Age <- as.factor(test$Age)
+test$Sex <- as.factor(test$Sex)
+
+# dropping some values to match their training set
+train_reproducing <- subset(train, BCS==3.0)
+train_reproducing <- subset(train_reproducing, Age!='<2')
+train_reproducing <- subset(train_reproducing, Age!='2-5')
+```
+
+```{r}
+model.rep = lm(2*(sqrt(Weight)-1) ~ log(Length) + log(Girth), data=train_reproducing)
+summary(model.rep)
+```
+
+* Note that the values obtained are significantly different. This might pose an issue for reproducibility.
+* b0_given = -107
+* b1_given = 19.91
+* b2_given = 7.712
+* We will use their given values to reproduce their results, and compare with our proposed model later.
+
+```{r}
+f = -107 + 19.91*log(test$Girth)
+g = 7.712*log(test$Length)
+raw_weight = (((f+g)/2) + 1)^2
+```
+
+```{r}
+levels(test$Age)
+levels(test$BCS)
+```
+
+```{r}
+age_adjustment <- function(num){
+  list = c(-8,-4,0,0,0,0)
+  return(list[num])
+}
+bcs_adjustment <- function(num){
+  list = c(NA,-10,-6,-5,0,6,14,NA)
+  return(list[num])
+}
+age = sapply(as.numeric(test$Age),age_adjustment)
+bcs = sapply(as.numeric(test$BCS),bcs_adjustment)
+author_predicted = raw_weight + age + bcs
+```
+
+```{r}
+actual_over_predicted = test$Weight/author_predicted
+n = length(actual_over_predicted)
+h <- hist(actual_over_predicted, breaks = 4, main = "Distribution of relative errors, actual/predicted")
+text(h$mids,h$counts,labels=paste(signif(100*h$counts/n,3),"%"), adj=c(0.5, -0.5))
+```
+
+```{r}
+ggplot(test, aes(x = author_predicted, y = Weight)) + geom_point(color = "red") + xlim(75,225) + ylim(75,225) + geom_abline(intercept = 0, slope = 1, size=0.9) + 
+geom_abline(intercept = 0, slope = 1.1, color="gray", linetype = "dashed", size=1) + 
+geom_abline(intercept = 0, slope = .9, color="gray", linetype = "dashed", size=1) + 
+geom_abline(intercept = 0, slope = .8, color="gray", linetype = "dotted", size=1) + 
+geom_abline(intercept = 0, slope = 1.2, color="gray", linetype = "dotted", size=1) + 
+scale_x_continuous(name = "Predicted", breaks = seq(75,225,25), limits = c(75,225)) + 
+scale_y_continuous(name = "Actual Weights", breaks = seq(75,225,25), limits = c(75,225))
+```
+
+# Issues/Notes with model
+
+* Cannot reproduce ols values. 
+* Model is not interpretable. Values and transformations do not make sense.
+* Additive adjustments are less plausible physiologically as compared to proportionate adjustments.
+* Presence of extreme residuals, especially negative ones. If we look at the graph provided in the paper, negative residuals should have a high loss due to the risk of overdosing of anaesthesia, even more so than positive residuals. 
+* Paper addresses this by only providing relative errors, because the given model has high residuals when the weight of donkey is high. If we believe that the dangers of prediction errors are due to anaesthesia and wormers, it is unclear if risks are more sensitive to absolute or relative errors.
+* Relative errors should be given by predicted/actual
+
+# EDA
+
+```{r}
+# pairs(Weight~BCS + Age + Sex + Length + Girth + Height, data = donkeys)
+pairs(Weight~Length + Girth + Height, data = train)
+```
+
+* Plots support use of linear model
+* Let us try some transformations
+
+```{r}
+pairs(log(Weight)~log(Length) + log(Girth) + log(Height), data = train)
+```
+
+* This motivates the use of log transforms
+
+# Proposed model 
+
+$$Weight = \beta_0e^{\beta_1I_{[BCS=1.5]}}e^{\beta_2I_{[BCS=2]}}e^{\beta_3I_{[BCS=2.5]}}e^{\beta_4I_{[BCS=3]}}e^{\beta_5I_{[BCS=3.5]}}e^{\beta_6I_{[BCS=4]}}e^{\beta_7I_{[Age<2]}}e^{\beta_8I_{[Age \in [2,5]]}}e^{\beta_9I_{[Age>5]}}e^{\beta_{10}I_{[Sex=female]}}e^{\beta_{11}I_{[Sex=stallion]}}e^{\beta_{12}I_{[Sex=gelding]}}Length^{\beta_{13}}Girth^{\beta_{14}}Height^{\beta_{15}}$$
+
+## Interpretation 
+
+* Toy example, donkey $i$ with $BCS = 3, \ Age = 3, \ Sex = female, \ Weight_i = \beta_0e^{\beta_4}e^{\beta_8}e^{\beta_{10}}Length^{\beta_{13}}Girth^{\beta_{14}}Height^{\beta_{15}}$
+* In other words, the BCS, Age and Sex category of the donkey give proportionate adjustments. These adjustments are determined by which categories the donkey falls into. 
+* If we assume the donkey to be cylindrical and of uniform density, we expect $\beta_{13} \sim 1, \beta_{14} \sim 2$, unlike values that were given in original model.
+* $Height^{\beta_{15}}$ is a proxy for frame of body, and therefore, the proportion of volume that consists of bones. This gives a proportionate adjustment to the weight.
+* It is worthwhile to note that as Length, Girth, or Height tends to 0, our model also predicts that weight tends to 0, unlike the previous model.
+* Also note that we can set $\beta_1, \beta_7, \beta_{10}$ to 0, since all the other categorical betas can be defined to be proportionate to these values, and we can adjust $\beta_0$ accordingly. This helps in understanding R's output. 
+
+# Run model
+
+```{r}
+model.prop = lm(log(Weight) ~ BCS + Age + Sex + log(Length) + log(Girth) + log(Height), data=train)
+summary(model.prop)
+```
+
+* We note that the beta values for sex is very low, and the p-values are relatively high. This gives us motivation to do variable selection.
+
+# Backwards Selection
+
+```{r}
+model = lm(log(Weight) ~ BCS + Age + Sex + log(Length) + log(Girth) + log(Height), data=train)
+
+stepwise = ols_step_both_aic(model)
+stepwise
+
+forward = ols_step_forward_aic(model)
+forward
+
+backward = ols_step_backward_aic(model)
+backward
+```
+
+* We see that indeed, sex is irrelevant. However, unlike the original paper, Height seems to be relevant.
+
+# New proposed model 
+
+$$Weight = \beta_0e^{\beta_1I_{[BCS=2]}}e^{\beta_2I_{[BCS=2.5]}}e^{\beta_3I_{[BCS=3]}}e^{\beta_4I_{[BCS=3.5]}}e^{\beta_5I_{[BCS=4]}}e^{\beta_6I_{[Age \in [2,5]]}}e^{\beta_7I_{[Age>5]}}Length^{\beta_{8}}Girth^{\beta_{9}}Height^{\beta_{10}}$$
+
+# Run model
+
+```{r}
+#m5 = lm(log(Weight) ~ BCS + Age + log(0.778*Length*(Girth^2) + 2.88*Legs), data=train)
+model = lm(log(Weight) ~ BCS + Age + log(Length) + log(Girth) + log(Height), data=train)
+predictions = predict.lm(model, test, interval="confidence")
+our_predicted = exp(predictions[,1])
+summary(model)
+```
+
+* We note that indeed, height is important. (Conjecture a few reasons why)
+* We also note that we get $\beta_{10} = 0.611, \beta_{11} = 1.47$, which are not equal to our idealized model, but close. This could indicate a cylinder with a "fatter" center, and a more ellipsoidal body. 
+
+# Diagnostics (ideally we can do this for previous model too)
+
+```{r}
+plot(model)
+```
+
+* Everything looks good, except scale-location plot. 
+
+```{r}
+bptest(model)
+```
+
+* Breusch-Pagan test indicates, that at a 5% level of significance, that heterscedasticity exists, so we should be fine for the scale-location plot.
+
+# Compare results
+
+
+```{r}
+plot_histogram <- function(list, title, subdivide){
+  if (subdivide){
+    h <- hist(list, main=title, breaks = 16)
+  }
+  else{
+    h <- hist(list, main=title)
+  }
+  text(h$mids,h$counts,labels=h$counts, adj=c(0.5, -0.5))
+}
+```
+
+```{r}
+results <- function(predicted, actual, breaks){
+  residuals = predicted - actual
+  relative_error = predicted/actual
+  MSE = mean(residuals^2)
+  cat("The MSE is", MSE,'\n')
+  cat("The relative error is",mean((relative_error-1)^2))
+  plot_histogram(residuals, "Histogram of Residuals", breaks)
+  plot_histogram(relative_error, "Histogram of Relative Error", FALSE)
+}
+```
+
+```{r}
+results(author_predicted,test$Weight,TRUE)
+```
+
+```{r}
+results(our_predicted,test$Weight,TRUE)
+```
+
+* We note a slight reduction in MSE, and in relative error too. Our model is comparable/better than the given model.
+
+* Our model has a slightly higher concentration of residues and relative errors towards the center, as reflected by our calculated values. It is significant to notice that this difference is more pronounced for negative residues/relative errors. If we assume an assymmetric loss function (as shown in the graph) that weights negative residues/errors more heavily, our model would be even better, despite us training on MSE loss. 
+
+# Cross-Validation
+
+```{r}
+
+# we want to perform cross validation on train to get better estimates of coefficients
+# then we see how our model does on the test data
+
+models = c()
+MSEs = c()
+mean_relative_errors = c()
+
+# 10 folds 14 coefficients
+betas = matrix(NA, nrow = 5, ncol = 14)
+# colnames(beta) <- c("Intercept", "BCS", )
+# 
+for(i in 1:5){
+  
+  # split into train and test folds
+  test_indices = seq(i, nrow(donkeys), 5)
+  train_fold = donkeys[-test_indices,]
+  test_fold = donkeys[test_indices,]
+  
+  # create a new model on train_fold
+  model = lm(log(Weight) ~ BCS + Age + log(Length) + log(Girth) + log(Height), data=train_fold)
+
+  # save coefficients
+  betas[i,] = model$coefficients
+  models = c(models, model)
+  
+  # save MSE and mean relative error
+  predictions = predict.lm(model, test_fold, interval="confidence")
+  residuals = exp(predictions[,1]) - test_fold$Weight
+  MSE = mean(residuals^2)
+  relative_error = exp(predictions[,1])/test_fold$Weight
+  mean_relative_error = (mean((relative_error-1)^2))
+  
+  MSEs = c(MSEs, MSE)
+  mean_relative_errors = c(mean_relative_errors, mean_relative_error)
+  
+}
+
+colnames(betas) = names(model$coefficients)
+
+```
+
+```{r}
+(betas)
+```
+
+```{r}
+mean(MSEs)
+sd(MSEs)
+```
+
+```{r}
+mean(mean_relative_errors)
+sd(mean_relative_errors)
+```
+
+```{r}
+plot(1:5, MSEs, type="o", main="MSEs")
+```
+
+
+```{r}
+plot(1:5, mean_relative_errors, type="o", main = "mean relative errors")
+```
+
+* We are unable to perform cross-validation on authors' model because we cannot recover ols values
+* Cross-validation shows that our model performs even better on other folds. 
+
+# ToDo: Sensitivity Analysis using betas, define how much output changes with a given change in input
+# ToDo: Update Shiny App with means, and maybe even provide a range? 
+
+
+

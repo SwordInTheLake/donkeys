@@ -42,15 +42,12 @@ library(dplyr)
 library(ggplot2)
 library(olsrr)
 library(lmtest)
+library(numbers)
 ```
-
 
 # Load in data
 
 ```{r}
-load('donkeys.rda')
-head(donkeys)
-
 train = data.frame(read.table("train.csv", sep=",", header=TRUE))
 test = data.frame(read.table("test.csv", sep=",", header=TRUE))
 
@@ -66,11 +63,37 @@ test$Sex <- as.factor(test$Sex)
 ```
 
 ```{r}
+# read in data 
+write.csv(donkeys,file="mysavefile.csv")
+donkeys = read.csv("mysavefile.csv")
+
 # drop BCS = 4.5 and BCS = 1
 donkeys <- subset(donkeys, BCS!=4.5 & BCS!=1)
 
 # drop baby donkey 
 donkeys <- subset(donkeys, Weight != 27)
+donkeys <- donkeys[order(donkeys$Weight),]
+
+# train-test split
+train <- NULL
+test <- NULL 
+for(i in 1:nrow(donkeys)){
+  if (mod(i,5) == 4){
+    test <- rbind(test, donkeys[i,])
+  }
+  else{
+    train <- rbind(train, donkeys[i,])
+  }
+}
+
+train$BCS <- as.factor(train$BCS)
+train$Age <- as.factor(train$Age)
+train$Sex <- as.factor(train$Sex)
+#train$Legs <- train$Height - train$Girth/pi
+
+test$BCS <- as.factor(test$BCS)
+test$Age <- as.factor(test$Age)
+test$Sex <- as.factor(test$Sex)
 ```
 
 ```{r}
@@ -226,24 +249,6 @@ print(MSE)
 relative_error = exp(predictions[,1])/test$Weight
 print(mean((relative_error-1)^2))
 ```
-
-```{r}
-neg_weight <- function(num){
-  if (num < 0){
-    return(num*1.2)
-  }
-}
-```
-
-```{r}
-relative_error2 = sapply(relative_error,neg_weight)
-print(mean((relative_error2-1)^2))
-```
-```{r}
-relative_error2
-```
-
-
 
 *We note a modest reduction in MSE, and a reduction in relative error too. Our model is comparable/better than the given model.
 

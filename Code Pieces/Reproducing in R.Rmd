@@ -11,11 +11,12 @@ library(ggplot2)
 library(olsrr)
 library(lmtest)
 library(numbers)
+library(paranomo)
 ```
 
 ```{r}
-# read in data 
-donkeys = read.csv("mysavefile.csv")
+# Read in donkeys
+donkeys <- data.frame(donkeys)
 
 # drop BCS = 4.5 and BCS = 1
 donkeys <- subset(donkeys, BCS!=4.5 & BCS!=1)
@@ -57,11 +58,6 @@ train_reproducing <- subset(train_reproducing, Age!='2-5')
 ```
 
 ```{r}
-train
-```
-
-
-```{r}
 model.rep = lm(2*(sqrt(Weight)-1) ~ log(Length) + log(Girth), data=train_reproducing)
 summary(model.rep)
 ```
@@ -78,26 +74,45 @@ raw_weight = (((f+g)/2) + 1)^2
 ```
 
 ```{r}
+levels(test$Age)
+levels(test$BCS)
+```
+
+```{r}
 age_adjustment <- function(num){
-  list = c(-8,0,0,0,-4,0)
+  list = c(-8,-4,0,0,0,0)
   return(list[num])
 }
 bcs_adjustment <- function(num){
-  list = c(-6,-5,0,6,14)
+  list = c(NA,-10,-6,-5,0,6,14,NA)
   return(list[num])
 }
 age = sapply(as.numeric(test$Age),age_adjustment)
 bcs = sapply(as.numeric(test$BCS),bcs_adjustment)
+author_predicted = raw_weight + age + bcs
 ```
 
 ```{r}
-predicted = raw_weight + age + bcs
-residuals = predicted - test$Weight
-MSE = mean(residuals^2)
-print(MSE)
-relative_error = predictions/test$Weight
-print(mean((relative_error-1)^2))
+actual_over_predicted = test$Weight/author_predicted
+n = length(actual_over_predicted)
+h <- hist(actual_over_predicted, breaks = 4, main = "Distribution of relative errors, actual/predicted")
+text(h$mids,h$counts,labels=paste(signif(100*h$counts/n,3),"%"), adj=c(0.5, -0.5))
 ```
+
+```{r}
+ggplot(test, aes(x = author_predicted, y = Weight)) + geom_point(color = "red") + xlim(75,225) + ylim(75,225) + geom_abline(intercept = 0, slope = 1, size=0.9) + 
+geom_abline(intercept = 0, slope = 1.1, color="gray", linetype = "dashed", size=1) + 
+geom_abline(intercept = 0, slope = .9, color="gray", linetype = "dashed", size=1) + 
+geom_abline(intercept = 0, slope = .8, color="gray", linetype = "dotted", size=1) + 
+geom_abline(intercept = 0, slope = 1.2, color="gray", linetype = "dotted", size=1) + 
+scale_x_continuous(name = "Predicted", breaks = seq(75,225,25), limits = c(75,225)) + 
+scale_y_continuous(name = "Actual Weights", breaks = seq(75,225,25), limits = c(75,225))
+```
+
+
+# Get quantitative results
+
+* We believe predicted/actual to be more statistically correct. 
 
 ```{r}
 plot_histogram <- function(list, title, subdivide){
@@ -109,25 +124,22 @@ plot_histogram <- function(list, title, subdivide){
   }
   text(h$mids,h$counts,labels=h$counts, adj=c(0.5, -0.5))
 }
-plot_histogram(residuals, "Histogram of Residuals", TRUE)
-plot_histogram(relative_error, "Histogram of Relative Error", FALSE)
-```
-
-
-```{r}
-#predictions = predict.lm(model.rep, test)
-#predicted = ((predictions/2) + 1)^2
 ```
 
 ```{r}
-ggplot(test, aes(x = predicted, y = Weight)) + geom_point(color = "red") + xlim(75,225) + ylim(75,225) + geom_abline(intercept = 0, slope = 1, size=0.9) + 
-geom_abline(intercept = 0, slope = 1.1, color="gray", linetype = "dashed", size=1) + 
-geom_abline(intercept = 0, slope = .9, color="gray", linetype = "dashed", size=1) + 
-geom_abline(intercept = 0, slope = .8, color="gray", linetype = "dotted", size=1) + 
-geom_abline(intercept = 0, slope = 1.2, color="gray", linetype = "dotted", size=1) + 
-scale_x_continuous(name = "Predicted", breaks = seq(75,225,25), limits = c(75,225)) + 
-scale_y_continuous(name = "Actual Weights", breaks = seq(75,225,25), limits = c(75,225))
+results <- function(predicted, actual, breaks){
+  residuals = predicted - actual
+  relative_error = predicted/actual
+  MSE = mean(residuals^2)
+  cat("The MSE is", MSE,'\n')
+  cat("The relative error is",mean((relative_error-1)^2))
+  plot_histogram(residuals, "Histogram of Residuals", breaks)
+  plot_histogram(relative_error, "Histogram of Relative Error", FALSE)
+}
 ```
 
+```{r}
+results(author_predicted,test$Weight,TRUE)
+```
 
 
