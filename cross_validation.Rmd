@@ -39,20 +39,6 @@ donkeys$Sex <- as.factor(donkeys$Sex)
 # cross validation
 
 ```{r}
-# assume we have already split data into train and test
-
-train = data.frame(read.table("train.csv", sep=",", header=TRUE))
-test = data.frame(read.table("test.csv", sep=",", header=TRUE))
-
-train$BCS <- as.factor(train$BCS)
-train$Age <- as.factor(train$Age)
-train$Sex <- as.factor(train$Sex)
-#train$Legs <- train$Height - train$Girth/pi
-
-test$BCS <- as.factor(test$BCS)
-test$Age <- as.factor(test$Age)
-test$Sex <- as.factor(test$Sex)
-
 
 # we want to perform cross validation on train to get better estimates of coefficients
 # then we see how our model does on the test data
@@ -68,15 +54,16 @@ betas = matrix(NA, nrow = 10, ncol = 14)
 for(i in 1:10){
   
   # split into train and test folds
-  test_indices = seq(i, nrow(train), 10)
-  train_fold = train[-test_indices,]
-  test_fold = train[test_indices,]
+  test_indices = seq(i, nrow(donkeys), 10)
+  train_fold = donkeys[-test_indices,]
+  test_fold = donkeys[test_indices,]
   
   # create a new model on train_fold
   model = lm(log(Weight) ~ BCS + Age + log(Length) + log(Girth) + log(Height), data=train_fold)
 
   # save coefficients
   betas[i,] = model$coefficients
+  models = c(models, model)
   
   # save MSE and mean relative error
   predictions = predict.lm(model, test_fold, interval="confidence")
@@ -89,7 +76,8 @@ for(i in 1:10){
   mean_relative_errors = c(mean_relative_errors, mean_relative_error)
   
 }
-colnames(betas) =names(model$coefficients)
+
+colnames(betas) = names(model$coefficients)
 
 ```
 
@@ -106,10 +94,12 @@ mean(mean_relative_errors)
 ```
 
 ```{r}
-plot(1:10, MSEs, type="o")
+plot(1:10, MSEs, type="o", main="MSEs")
 ```
 
 
 ```{r}
-plot(1:10, mean_relative_errors, type="o")
+plot(1:10, mean_relative_errors, type="o", main = "mean relative errors")
 ```
+
+
