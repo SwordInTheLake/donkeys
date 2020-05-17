@@ -243,17 +243,13 @@ results(our_predicted,test$Weight,TRUE)
 
 ```{r}
 
-# we want to perform cross validation on train to get better estimates of coefficients
-# then we see how our model does on the test data
-
 models = c()
 MSEs = c()
 mean_relative_errors = c()
 
-# 10 folds 14 coefficients
+# 5 folds 14 coefficients
 betas = matrix(NA, nrow = 5, ncol = 14)
-# colnames(beta) <- c("Intercept", "BCS", )
-# 
+
 for(i in 1:5){
   
   # split into train and test folds
@@ -311,6 +307,29 @@ plot(1:5, mean_relative_errors, type="o", main = "mean relative errors")
 * Cross-validation shows that our model performs even better on other folds. 
 
 # ToDo: Sensitivity Analysis using betas, define how much output changes with a given change in input
+
+```{r}
+
+# "Sensitivity analysis involves a series of methods to quantify how the uncertainty in the output of a model is related to the uncertainty in its inputs. In other words, sensitivity analysis assesses how “sensitive” the model is to fluctuations in the parameters and data on which it is built."
+
+# "The principles of a sensitivity analysis are: (a) to allow the investigator to quantify the uncertainty in a model, (b) to test the model of interest using a secondary experimental design, and (c) using the results of the secondary experimental design to calculate the overall sensitivity of the model of interest. "
+
+
+# test a model without height as the paper did
+
+model_without_height = lm(log(Weight) ~ BCS + Age + log(Length) + log(Girth), data=train)
+predictions_without_height = predict.lm(model_without_height, test, interval="confidence")
+residuals_without_height = exp(predictions_without_height[,1])  - test_fold$Weight
+MSE_without_height = mean(residuals_without_height^2)
+MSE_without_height
+```
+
+```{r}
+summary(model)
+summary(model_without_height)
+```
+
+
 # ToDo: Update Shiny App with means, and maybe even provide a range? 
 
 
