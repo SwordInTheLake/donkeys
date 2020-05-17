@@ -50,6 +50,7 @@ test$Sex <- as.factor(test$Sex)
 train_reproducing <- subset(train, BCS==3.0)
 train_reproducing <- subset(train_reproducing, Age!='<2')
 train_reproducing <- subset(train_reproducing, Age!='2-5')
+# write.csv(train_reproducing, file = 'train_reproducing.csv')
 ```
 
 ```{r}
@@ -57,7 +58,7 @@ model.rep = lm(2*(sqrt(Weight)-1) ~ log(Length) + log(Girth), data=train_reprodu
 summary(model.rep)
 ```
 
-* Note that the values obtained are significantly different. This might pose an issue for reproducibility.
+* Values are different because of the asymmetric loss function they implemented.
 * b0_given = -107
 * b1_given = 19.91
 * b2_given = 7.712
@@ -142,6 +143,10 @@ $$Weight = \beta_0e^{\beta_1I_{[BCS=1.5]}}e^{\beta_2I_{[BCS=2]}}e^{\beta_3I_{[BC
 * $Height^{\beta_{15}}$ is a proxy for frame of body, and therefore, the proportion of volume that consists of bones. This gives a proportionate adjustment to the weight.
 * It is worthwhile to note that as Length, Girth, or Height tends to 0, our model also predicts that weight tends to 0, unlike the previous model.
 * Also note that we can set $\beta_1, \beta_7, \beta_{10}$ to 0, since all the other categorical betas can be defined to be proportionate to these values, and we can adjust $\beta_0$ accordingly. This helps in understanding R's output. 
+
+# Loss function
+
+* For ease of implementation, we define our loss function to be the absolute squared error. This allows us to use ordinary least squares to obtain our betas. 
 
 # Run model
 
@@ -239,6 +244,77 @@ results(our_predicted,test$Weight,TRUE)
 
 * Our model has a slightly higher concentration of residues and relative errors towards the center, as reflected by our calculated values. It is significant to notice that this difference is more pronounced for negative residues/relative errors. If we assume an assymmetric loss function (as shown in the graph) that weights negative residues/errors more heavily, our model would be even better, despite us training on MSE loss. 
 
+# What about our performance on their loss function? 
+
+* We are unable to reproduce their loss function exactly, but we can try to approximate it
+
+```{r}
+n = nrow(train_reproducing)
+X <- matrix(NA, nrow = n, ncol = 3)
+X[,1] <- rep(1,n)
+X[,2] <- log(train_reproducing$Length)
+X[,3] <- log(train_reproducing$Girth)
+y <- 2*(sqrt(train_reproducing$Weight) - 1)
+theta<-c (-103.394,8.057,18.837) #Initialize base on ols values
+```
+
+```{r}
+# Define scaled quad-quad loss function that weights negative residuals greater
+# We do not implement a tilt as mentioned in the paper, as this would require optimizing over too many hyperparameters
+
+new_cost<-function(X, y, par, alpha){  
+  m <- length(y)
+  predictions = X%*%par
+  relative_error = y/predictions - 1
+  for (i in 1:length(relative_error)){
+    if(relative_error[i]<0){
+      relative_error[i]=relative_error[i]*alpha
+    }
+  }
+  J <- sum((relative_error)^2)
+  return(J) 
+}
+```
+
+
+```{r}
+alphas = seq(2,2.5,by=0.01)
+differences = c()
+
+for(i in 1:length(alphas)){
+  ret = optim(par = theta, fn = new_cost, X = X, y = y, alpha = alphas[i])
+  optimal = c(-107.0, 7.712, 19.91)
+  difference = sum(abs(ret$par - optimal))
+  differences[i] = difference
+}
+
+alpha = alphas[which.min(differences)]
+print(alpha)
+ret = optim(par = theta, fn = new_cost, X = X, y = y, alpha = alpha)
+print(ret$par)
+```
+
+```{r}
+asymmetric_loss <- function(predicted, actual, alpha){
+  relative_error = predicted/actual-1
+  for (i in 1:length(relative_error)){
+    if(relative_error[i]<0){
+      relative_error[i]=relative_error[i]*alpha
+    }
+  }
+  cat("The relative error is",mean((relative_error)^2),"\n")
+}
+```
+
+```{r}
+asymmetric_loss(author_predicted,test$Weight,alpha)
+asymmetric_loss(our_predicted,test$Weight,alpha)
+```
+
+* As expected, our model does perform markedly better under the asymmetric loss. 
+* We could train our model with this loss, but this was not done because we felt it was excessive to do so without knowledge of the true loss function. 
+* We hence proceed with a model that minimizes absolute squared error. This can be altered as necessary with more information about potential dangers associated with over/under-predictions, and whether relative error is more appropriate. 
+
 # Cross-Validation
 
 ```{r}
@@ -307,10 +383,28 @@ plot(1:5, MSEs, type="o", main="MSEs")
 plot(1:5, mean_relative_errors, type="o", main = "mean relative errors")
 ```
 
-* We are unable to perform cross-validation on authors' model because we cannot recover ols values
+* We are unable to perform cross-validation on authors' model because we cannot recover loss function
 * Cross-validation shows that our model performs even better on other folds. 
 
-# ToDo: Sensitivity Analysis using betas, define how much output changes with a given change in input
+# Sensitivity Analysis
+
+```{r}
+# "Sensitivity analysis involves a series of methods to quantify how the uncertainty in the output of a model is related to the uncertainty in its inputs. In other words, sensitivity analysis assesses how “sensitive” the model is to fluctuations in the parameters and data on which it is built."
+# "The principles of a sensitivity analysis are: (a) to allow the investigator to quantify the uncertainty in a model, (b) to test the model of interest using a secondary experimental design, and (c) using the results of the secondary experimental design to calculate the overall sensitivity of the model of interest. "
+# - https://link.springer.com/chapter/10.1007/978-3-319-43742-2_17
+# test a model without height as the paper did
+model_without_height = lm(log(Weight) ~ BCS + Age + log(Length) + log(Girth), data=train)
+predictions_without_height = predict.lm(model_without_height, test, interval="confidence")
+residuals_without_height = exp(predictions_without_height[,1])  - test_fold$Weight
+MSE_without_height = mean(residuals_without_height^2)
+MSE_without_height
+```
+
+```{r}
+summary(model)
+summary(model_without_height)
+```
+
 # ToDo: Update Shiny App with means, and maybe even provide a range? 
 
 
