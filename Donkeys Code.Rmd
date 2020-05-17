@@ -314,6 +314,8 @@ plot(1:5, mean_relative_errors, type="o", main = "mean relative errors")
 
 # "The principles of a sensitivity analysis are: (a) to allow the investigator to quantify the uncertainty in a model, (b) to test the model of interest using a secondary experimental design, and (c) using the results of the secondary experimental design to calculate the overall sensitivity of the model of interest. "
 
+# - https://link.springer.com/chapter/10.1007/978-3-319-43742-2_17
+
 
 # test a model without height as the paper did
 
