@@ -1,0 +1,115 @@
+---
+title: "cross_validation"
+author: "Daniel Zhou"
+date: "5/16/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(dplyr)
+library(ggplot2)
+library(olsrr)
+library(lmtest)
+library(numbers)
+```
+
+# load in data
+
+```{r}
+# read in data 
+donkeys = read.csv("mysavefile.csv")
+
+# drop BCS = 4.5 and BCS = 1
+donkeys <- subset(donkeys, BCS!=4.5 & BCS!=1)
+
+# drop baby donkey 
+donkeys <- subset(donkeys, Weight != 27)
+donkeys <- donkeys[order(donkeys$Weight),]
+
+donkeys$BCS <- as.factor(donkeys$BCS)
+donkeys$Age <- as.factor(donkeys$Age)
+donkeys$Sex <- as.factor(donkeys$Sex)
+#train$Legs <- train$Height - train$Girth/pi
+```
+
+# cross validation
+
+```{r}
+# assume we have already split data into train and test
+
+train = data.frame(read.table("train.csv", sep=",", header=TRUE))
+test = data.frame(read.table("test.csv", sep=",", header=TRUE))
+
+train$BCS <- as.factor(train$BCS)
+train$Age <- as.factor(train$Age)
+train$Sex <- as.factor(train$Sex)
+#train$Legs <- train$Height - train$Girth/pi
+
+test$BCS <- as.factor(test$BCS)
+test$Age <- as.factor(test$Age)
+test$Sex <- as.factor(test$Sex)
+
+
+# we want to perform cross validation on train to get better estimates of coefficients
+# then we see how our model does on the test data
+
+models = c()
+MSEs = c()
+mean_relative_errors = c()
+
+# 10 folds 14 coefficients
+betas = matrix(NA, nrow = 10, ncol = 14)
+# colnames(beta) <- c("Intercept", "BCS", )
+# 
+for(i in 1:10){
+  
+  # split into train and test folds
+  test_indices = seq(i, nrow(train), 10)
+  train_fold = train[-test_indices,]
+  test_fold = train[test_indices,]
+  
+  # create a new model on train_fold
+  model = lm(log(Weight) ~ BCS + Age + log(Length) + log(Girth) + log(Height), data=train_fold)
+
+  # save coefficients
+  betas[i,] = model$coefficients
+  
+  # save MSE and mean relative error
+  predictions = predict.lm(model, test_fold, interval="confidence")
+  residuals = exp(predictions[,1]) - test_fold$Weight
+  MSE = mean(residuals^2)
+  relative_error = exp(predictions[,1])/test_fold$Weight
+  mean_relative_error = (mean((relative_error-1)^2))
+  
+  MSEs = c(MSEs, MSE)
+  mean_relative_errors = c(mean_relative_errors, mean_relative_error)
+  
+}
+colnames(betas) =names(model$coefficients)
+
+```
+
+```{r}
+colMeans(betas)
+```
+
+```{r}
+mean(MSEs)
+```
+
+```{r}
+mean(mean_relative_errors)
+```
+
+```{r}
+plot(1:10, MSEs, type="o")
+```
+
+
+```{r}
+plot(1:10, mean_relative_errors, type="o")
+```
