@@ -48,13 +48,13 @@ MSEs = c()
 mean_relative_errors = c()
 
 # 10 folds 14 coefficients
-betas = matrix(NA, nrow = 10, ncol = 14)
+betas = matrix(NA, nrow = 5, ncol = 14)
 # colnames(beta) <- c("Intercept", "BCS", )
 # 
-for(i in 1:10){
+for(i in 1:5){
   
   # split into train and test folds
-  test_indices = seq(i, nrow(donkeys), 10)
+  test_indices = seq(i, nrow(donkeys), 5)
   train_fold = donkeys[-test_indices,]
   test_fold = donkeys[test_indices,]
   
@@ -82,7 +82,7 @@ colnames(betas) = names(model$coefficients)
 ```
 
 ```{r}
-colMeans(betas)
+(betas)
 ```
 
 ```{r}
@@ -94,12 +94,12 @@ mean(mean_relative_errors)
 ```
 
 ```{r}
-plot(1:10, MSEs, type="o", main="MSEs")
+plot(1:5, MSEs, type="o", main="MSEs")
 ```
 
 
 ```{r}
-plot(1:10, mean_relative_errors, type="o", main = "mean relative errors")
+plot(1:5, mean_relative_errors, type="o", main = "mean relative errors")
 ```
 
 
