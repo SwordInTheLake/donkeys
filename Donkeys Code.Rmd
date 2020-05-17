@@ -404,7 +404,7 @@ plot(1:5, mean_relative_errors, type="o", main = "mean relative errors")
 
 # test a model without height as the paper did
 
->>>>>>> 189c502585e68f6ad908ad2c8ce183f2e6dbbef8
+
 model_without_height = lm(log(Weight) ~ BCS + Age + log(Length) + log(Girth), data=train)
 predictions_without_height = predict.lm(model_without_height, test, interval="confidence")
 residuals_without_height = exp(predictions_without_height[,1])  - test_fold$Weight
@@ -417,10 +417,6 @@ summary(model)
 summary(model_without_height)
 ```
 
-<<<<<<< HEAD
-=======
-
->>>>>>> 189c502585e68f6ad908ad2c8ce183f2e6dbbef8
 # ToDo: Update Shiny App with means, and maybe even provide a range? 
 
 
