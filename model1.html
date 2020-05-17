@@ -511,8 +511,8 @@ plot_histogram(residuals, &quot;Histogram of Residuals&quot;, TRUE)</code></pre>
 <li>Also note that we can set <span class="math inline">\(\beta_1, \beta_7, \beta_{10}\)</span> to 0, since all the other categorical betas can be defined to be proportionate to these values, and we can adjust <span class="math inline">\(\beta_0\)</span> accordingly. This helps in understanding R’s output.</li>
 </ul>
 <p>#Run model</p>
-<pre class="r"><code>model = lm(log(Weight) ~ BCS + Age + Sex + log(Length) + log(Girth) + log(Height), data=train)
-summary(model)</code></pre>
+<pre class="r"><code>model.prop = lm(log(Weight) ~ BCS + Age + Sex + log(Length) + log(Girth) + log(Height), data=train)
+summary(model.prop)</code></pre>
 <pre><code>## 
 ## Call:
 ## lm(formula = log(Weight) ~ BCS + Age + Sex + log(Length) + log(Girth) + 

@@ -46,7 +46,7 @@ test$Age <- as.factor(test$Age)
 test$Sex <- as.factor(test$Sex)
 
 # dropping some values to match their training set
-train_reproducing <- subset(train, BCS==3)
+train_reproducing <- subset(train, BCS==3.0)
 train_reproducing <- subset(train_reproducing, Age!='<2')
 train_reproducing <- subset(train_reproducing, Age!='2-5')
 
@@ -55,6 +55,11 @@ train_reproducing <- subset(train_reproducing, Age!='2-5')
 #test_dan = data.frame(read.table("test.csv", sep=",", header=TRUE))
 #train_reproducing = data.frame(read.table("train_reproducing.csv", sep=",", header = TRUE))
 ```
+
+```{r}
+train
+```
+
 
 ```{r}
 model.rep = lm(2*(sqrt(Weight)-1) ~ log(Length) + log(Girth), data=train_reproducing)
