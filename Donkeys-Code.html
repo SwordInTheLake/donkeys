@@ -789,17 +789,13 @@ print(ret$par)</code></pre>
 </div>
 <div id="cross-validation" class="section level1">
 <h1>Cross-Validation</h1>
-<pre class="r"><code># we want to perform cross validation on train to get better estimates of coefficients
-# then we see how our model does on the test data
-
-models = c()
+<pre class="r"><code>models = c()
 MSEs = c()
 mean_relative_errors = c()
 
-# 10 folds 14 coefficients
+# 5 folds 14 coefficients
 betas = matrix(NA, nrow = 5, ncol = 14)
-# colnames(beta) &lt;- c(&quot;Intercept&quot;, &quot;BCS&quot;, )
-# 
+
 for(i in 1:5){
   
   # split into train and test folds
@@ -862,10 +858,107 @@ colnames(betas) = names(model$coefficients)</code></pre>
 <li>We are unable to perform cross-validation on authors’ model because we cannot recover loss function</li>
 <li>Cross-validation shows that our model performs even better on other folds.</li>
 </ul>
+</div>
+<div id="sensitivity-analysis" class="section level1">
+<h1>Sensitivity Analysis</h1>
+<div id="part-1" class="section level2">
+<h2>Part 1</h2>
+<ul>
+<li>Motivated by the EDA, we fit a linear model and notice that we get the same covariates that are important.</li>
+</ul>
+<pre class="r"><code>model = lm(Weight ~ BCS + Age + Sex + Length + Girth + Height, data=train)
+
+stepwise = ols_step_both_aic(model)
+stepwise</code></pre>
+<pre><code>## 
+## 
+##                                   Stepwise Summary                                   
+## -----------------------------------------------------------------------------------
+## Variable     Method       AIC          RSS         Sum Sq       R-Sq      Adj. R-Sq 
+## -----------------------------------------------------------------------------------
+## Girth       addition    3271.246    47755.264    242024.764    0.83520      0.83482 
+## Length      addition    3134.002    34622.690    255157.337    0.88052      0.87997 
+## BCS         addition    3077.648    29703.590    260076.438    0.89750      0.89581 
+## Height      addition    3049.151    27683.477    262096.551    0.90447      0.90266 
+## Age         addition    3022.694    25448.060    264331.968    0.91218      0.90946 
+## -----------------------------------------------------------------------------------</code></pre>
+<ul>
+<li>We fit their model and notice the same thing</li>
+</ul>
+<pre class="r"><code>model = lm(sqrt(Weight) ~ BCS + Age + Sex + log(Length) + log(Girth) + log(Height), data=train)
+
+stepwise = ols_step_both_aic(model)
+stepwise</code></pre>
+<pre><code>## 
+## 
+##                                 Stepwise Summary                                 
+## -------------------------------------------------------------------------------
+## Variable        Method       AIC       RSS      Sum Sq      R-Sq      Adj. R-Sq 
+## -------------------------------------------------------------------------------
+## log(Girth)     addition    493.087    78.083    439.692    0.84920      0.84885 
+## log(Length)    addition    347.442    55.523    462.253    0.89277      0.89227 
+## BCS            addition    297.378    48.331    469.444    0.90666      0.90512 
+## log(Height)    addition    271.123    45.278    472.497    0.91255      0.91090 
+## Age            addition    239.382    41.117    476.658    0.92059      0.91813 
+## -------------------------------------------------------------------------------</code></pre>
+<ul>
+<li>We try a naive model that adds a term for the cylinder</li>
+</ul>
+<pre class="r"><code>model = lm(Weight ~ BCS + Age + Sex + Length + Girth + Height + Length*Girth^2, data=train)
+
+stepwise = ols_step_both_aic(model)
+stepwise</code></pre>
+<pre><code>## 
+## 
+##                                     Stepwise Summary                                     
+## ---------------------------------------------------------------------------------------
+## Variable         Method       AIC          RSS         Sum Sq       R-Sq      Adj. R-Sq 
+## ---------------------------------------------------------------------------------------
+## Length:Girth    addition    3253.791    45868.433    243911.594    0.84171      0.84135 
+## Girth           addition    3128.635    34196.232    255583.796    0.88199      0.88144 
+## BCS             addition    3077.654    29703.970    260076.058    0.89749      0.89581 
+## Height          addition    3048.648    27651.298    262128.730    0.90458      0.90278 
+## Age             addition    3018.873    25224.491    264555.536    0.91295      0.91025 
+## ---------------------------------------------------------------------------------------</code></pre>
+<ul>
+<li>All models show that we should not consider sex, but height seems to be important.</li>
+</ul>
+</div>
+<div id="part-2" class="section level2">
+<h2>Part 2</h2>
+<p>The log-log model makes our weight predictions very sensitive to the changes in beta. Let us quantify this:</p>
+<p>For convenience we restate our model: <span class="math display">\[Weight = \beta_0e^{\beta_1I_{[BCS=2]}}e^{\beta_2I_{[BCS=2.5]}}e^{\beta_3I_{[BCS=3]}}e^{\beta_4I_{[BCS=3.5]}}e^{\beta_5I_{[BCS=4]}}e^{\beta_6I_{[Age \in [2,5]]}}e^{\beta_7I_{[Age&gt;5]}}Length^{\beta_{8}}Girth^{\beta_{9}}Height^{\beta_{10}}\]</span></p>
+<ul>
+<li>For <span class="math inline">\(\beta_0 \dots \beta_7\)</span>, a unit increase in the beta, leads to a 100% increase in Weight.</li>
+<li>A unit increase in <span class="math inline">\(\beta_8\)</span> leads to a log(Length)*100% increase in Weight.</li>
+<li>A unit increase in <span class="math inline">\(\beta_9\)</span> leads to a log(Girth)*100% increase in Weight.</li>
+<li>A unit increase in <span class="math inline">\(\beta_{10}\)</span> leads to a log(Height)*100% increase in Weight.</li>
+</ul>
+<p>Note that this means that the weight predictions are extremely sensitive to <span class="math inline">\(\beta_8, \beta_9, \beta_{10}\)</span>.</p>
+<p>We quantify this sensitivity:</p>
+<pre class="r"><code>quantile(log(donkeys$Height),probs = c(0.025, 0.5, 0.975))</code></pre>
+<pre><code>##     2.5%      50%    97.5% 
+## 4.521789 4.624973 4.691348</code></pre>
+<pre class="r"><code>quantile(log(donkeys$Length),probs = c(0.025, 0.5, 0.975))</code></pre>
+<pre><code>##     2.5%      50%    97.5% 
+## 4.375737 4.574711 4.682131</code></pre>
+<pre class="r"><code>quantile(log(donkeys$Girth),probs = c(0.025, 0.5, 0.975))</code></pre>
+<pre><code>##     2.5%      50%    97.5% 
+## 4.584967 4.762174 4.852030</code></pre>
+<p>Now if we refer to the beta values we obtained from cross validation, we note that the <span class="math inline">\(\beta_2 \dots \beta_7\)</span> do not change much. However, the <span class="math inline">\(\beta_0, \beta_8, \beta_9, \beta_{10}\)</span> do experience fluctuations that might be problematic. This could signal a flaw in our model. However, our predictions do look good, which could alleviate some of these concerns.</p>
+</div>
+<div id="part-3-taking-a-covariate-out-and-seeing-how-it-affects-beta-values" class="section level2">
+<h2>Part 3: Taking a covariate out and seeing how it affects beta values</h2>
 <pre class="r"><code># &quot;Sensitivity analysis involves a series of methods to quantify how the uncertainty in the output of a model is related to the uncertainty in its inputs. In other words, sensitivity analysis assesses how “sensitive” the model is to fluctuations in the parameters and data on which it is built.&quot;
+
 # &quot;The principles of a sensitivity analysis are: (a) to allow the investigator to quantify the uncertainty in a model, (b) to test the model of interest using a secondary experimental design, and (c) using the results of the secondary experimental design to calculate the overall sensitivity of the model of interest. &quot;
+
 # - https://link.springer.com/chapter/10.1007/978-3-319-43742-2_17
+
+
 # test a model without height as the paper did
+
+
 model_without_height = lm(log(Weight) ~ BCS + Age + log(Length) + log(Girth), data=train)
 predictions_without_height = predict.lm(model_without_height, test, interval=&quot;confidence&quot;)
 residuals_without_height = exp(predictions_without_height[,1])  - test_fold$Weight
@@ -875,35 +968,38 @@ MSE_without_height</code></pre>
 <pre class="r"><code>summary(model)</code></pre>
 <pre><code>## 
 ## Call:
-## lm(formula = log(Weight) ~ BCS + Age + log(Length) + log(Girth) + 
-##     log(Height), data = train_fold)
+## lm(formula = Weight ~ BCS + Age + Sex + Length + Girth + Height + 
+##     Length * Girth^2, data = train)
 ## 
 ## Residuals:
 ##      Min       1Q   Median       3Q      Max 
-## -0.14600 -0.03481 -0.00234  0.03742  0.13131 
+## -20.4808  -5.4294  -0.2417   5.2387  20.8163 
 ## 
 ## Coefficients:
-##             Estimate Std. Error t value Pr(&gt;|t|)    
-## (Intercept) -7.39190    0.36105 -20.473  &lt; 2e-16 ***
-## BCS2         0.03912    0.02584   1.514 0.130841    
-## BCS2.5       0.06094    0.02424   2.514 0.012302 *  
-## BCS3         0.09230    0.02432   3.796 0.000169 ***
-## BCS3.5       0.12389    0.02572   4.817 2.04e-06 ***
-## BCS4         0.14974    0.02979   5.027 7.39e-07 ***
-## Age2-5       0.05293    0.01142   4.635 4.77e-06 ***
-## Age5-10      0.07739    0.01312   5.898 7.59e-09 ***
-## Age10-15     0.08581    0.01255   6.836 2.89e-11 ***
-## Age15-20     0.09709    0.01532   6.339 5.99e-10 ***
-## Age&gt;20       0.07519    0.01525   4.932 1.18e-06 ***
-## log(Length)  0.60075    0.04954  12.126  &lt; 2e-16 ***
-## log(Girth)   1.48710    0.08001  18.586  &lt; 2e-16 ***
-## log(Height)  0.52866    0.09351   5.653 2.91e-08 ***
+##                Estimate Std. Error t value Pr(&gt;|t|)    
+## (Intercept)  -1.164e+02  6.200e+01  -1.878 0.061077 .  
+## BCS2          4.326e+00  3.872e+00   1.117 0.264581    
+## BCS2.5        7.187e+00  3.634e+00   1.978 0.048643 *  
+## BCS3          1.221e+01  3.644e+00   3.352 0.000875 ***
+## BCS3.5        1.842e+01  3.850e+00   4.784 2.39e-06 ***
+## BCS4          2.564e+01  4.477e+00   5.727 1.96e-08 ***
+## Age2-5        4.228e+00  1.833e+00   2.307 0.021550 *  
+## Age5-10       8.264e+00  2.070e+00   3.992 7.76e-05 ***
+## Age10-15      9.830e+00  1.983e+00   4.956 1.05e-06 ***
+## Age15-20      1.216e+01  2.396e+00   5.074 5.87e-07 ***
+## Age&gt;20        8.308e+00  2.384e+00   3.485 0.000545 ***
+## Sexgelding   -1.226e+00  1.186e+00  -1.033 0.302006    
+## Sexfemale    -8.090e-01  8.445e-01  -0.958 0.338600    
+## Length       -4.791e-01  6.740e-01  -0.711 0.477595    
+## Girth         6.716e-01  5.527e-01   1.215 0.225038    
+## Height        8.573e-01  1.411e-01   6.074 2.81e-09 ***
+## Length:Girth  1.179e-02  5.815e-03   2.027 0.043324 *  
 ## ---
 ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 ## 
-## Residual standard error: 0.05193 on 419 degrees of freedom
-## Multiple R-squared:  0.9262, Adjusted R-squared:  0.9239 
-## F-statistic: 404.3 on 13 and 419 DF,  p-value: &lt; 2.2e-16</code></pre>
+## Residual standard error: 7.768 on 416 degrees of freedom
+## Multiple R-squared:  0.9134, Adjusted R-squared:   0.91 
+## F-statistic: 274.2 on 16 and 416 DF,  p-value: &lt; 2.2e-16</code></pre>
 <pre class="r"><code>summary(model_without_height)</code></pre>
 <pre><code>## 
 ## Call:
@@ -936,8 +1032,48 @@ MSE_without_height</code></pre>
 ## Multiple R-squared:  0.9205, Adjusted R-squared:  0.9183 
 ## F-statistic: 405.4 on 12 and 420 DF,  p-value: &lt; 2.2e-16</code></pre>
 </div>
-<div id="todo-update-shiny-app-with-means-and-maybe-even-provide-a-range" class="section level1">
-<h1>ToDo: Update Shiny App with means, and maybe even provide a range?</h1>
+</div>
+<div id="final-betas" class="section level1">
+<h1>Final Betas</h1>
+<p>We train the model on the full dataset to provide beta values for future predictions.</p>
+<pre class="r"><code>model.prop = lm(log(Weight) ~ BCS + Age + Sex + log(Length) + log(Girth) + log(Height), data=donkeys)
+summary(model.prop)</code></pre>
+<pre><code>## 
+## Call:
+## lm(formula = log(Weight) ~ BCS + Age + Sex + log(Length) + log(Girth) + 
+##     log(Height), data = donkeys)
+## 
+## Residuals:
+##       Min        1Q    Median        3Q       Max 
+## -0.167892 -0.034093  0.000246  0.038032  0.171446 
+## 
+## Coefficients:
+##              Estimate Std. Error t value Pr(&gt;|t|)    
+## (Intercept) -7.373077   0.336590 -21.905  &lt; 2e-16 ***
+## BCS2         0.037595   0.026561   1.415  0.15753    
+## BCS2.5       0.054468   0.025022   2.177  0.02994 *  
+## BCS3         0.090639   0.025078   3.614  0.00033 ***
+## BCS3.5       0.127860   0.026413   4.841 1.70e-06 ***
+## BCS4         0.145279   0.029737   4.885 1.37e-06 ***
+## Age2-5       0.053329   0.010894   4.895 1.31e-06 ***
+## Age5-10      0.074521   0.012419   6.000 3.67e-09 ***
+## Age10-15     0.084253   0.011956   7.047 5.78e-12 ***
+## Age15-20     0.084060   0.014631   5.745 1.56e-08 ***
+## Age&gt;20       0.075258   0.014513   5.185 3.08e-07 ***
+## Sexgelding  -0.005613   0.007560  -0.742  0.45820    
+## Sexfemale   -0.005873   0.005255  -1.118  0.26427    
+## log(Length)  0.637690   0.046525  13.706  &lt; 2e-16 ***
+## log(Girth)   1.443084   0.073881  19.533  &lt; 2e-16 ***
+## log(Height)  0.534737   0.087773   6.092 2.15e-09 ***
+## ---
+## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+## 
+## Residual standard error: 0.05401 on 525 degrees of freedom
+## Multiple R-squared:  0.9187, Adjusted R-squared:  0.9164 
+## F-statistic: 395.5 on 15 and 525 DF,  p-value: &lt; 2.2e-16</code></pre>
+</div>
+<div id="todo-update-shiny-app-with-these-values-and-maybe-even-provide-a-range" class="section level1">
+<h1>ToDo: Update Shiny App with these values, and maybe even provide a range?</h1>
 </div>
 
 

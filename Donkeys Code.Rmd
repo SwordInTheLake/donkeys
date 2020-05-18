@@ -382,19 +382,65 @@ plot(1:5, mean_relative_errors, type="o", main = "mean relative errors")
 * We are unable to perform cross-validation on authors' model because we cannot recover loss function
 * Cross-validation shows that our model performs even better on other folds. 
 
-<<<<<<< HEAD
 # Sensitivity Analysis
 
-```{r}
-# "Sensitivity analysis involves a series of methods to quantify how the uncertainty in the output of a model is related to the uncertainty in its inputs. In other words, sensitivity analysis assesses how “sensitive” the model is to fluctuations in the parameters and data on which it is built."
-# "The principles of a sensitivity analysis are: (a) to allow the investigator to quantify the uncertainty in a model, (b) to test the model of interest using a secondary experimental design, and (c) using the results of the secondary experimental design to calculate the overall sensitivity of the model of interest. "
-# - https://link.springer.com/chapter/10.1007/978-3-319-43742-2_17
-# test a model without height as the paper did
-=======
-# ToDo: Sensitivity Analysis using betas, define how much output changes with a given change in input
+## Part 1
+
+* Motivated by the EDA, we fit a linear model and notice that we get the same covariates that are important.
 
 ```{r}
+model = lm(Weight ~ BCS + Age + Sex + Length + Girth + Height, data=train)
 
+stepwise = ols_step_both_aic(model)
+stepwise
+```
+
+* We fit their model and notice the same thing
+
+```{r}
+model = lm(sqrt(Weight) ~ BCS + Age + Sex + log(Length) + log(Girth) + log(Height), data=train)
+
+stepwise = ols_step_both_aic(model)
+stepwise
+```
+
+* We try a naive model that adds a term for the cylinder
+
+```{r}
+model = lm(Weight ~ BCS + Age + Sex + Length + Girth + Height + Length*Girth^2, data=train)
+
+stepwise = ols_step_both_aic(model)
+stepwise
+```
+
+* All models show that we should not consider sex, but height seems to be important. 
+
+## Part 2
+
+The log-log model makes our weight predictions very sensitive to the changes in beta. Let us quantify this: 
+
+For convenience we restate our model: $$Weight = \beta_0e^{\beta_1I_{[BCS=2]}}e^{\beta_2I_{[BCS=2.5]}}e^{\beta_3I_{[BCS=3]}}e^{\beta_4I_{[BCS=3.5]}}e^{\beta_5I_{[BCS=4]}}e^{\beta_6I_{[Age \in [2,5]]}}e^{\beta_7I_{[Age>5]}}Length^{\beta_{8}}Girth^{\beta_{9}}Height^{\beta_{10}}$$
+
+* For $\beta_0 \dots \beta_7$, a unit increase in the beta, leads to a 100% increase in Weight. 
+* A unit increase in $\beta_8$ leads to a log(Length)*100% increase in Weight. 
+* A unit increase in $\beta_9$ leads to a log(Girth)*100% increase in Weight.
+* A unit increase in $\beta_{10}$ leads to a log(Height)*100% increase in Weight. 
+
+Note that this means that the weight predictions are extremely sensitive to $\beta_8, \beta_9, \beta_{10}$. 
+
+We quantify this sensitivity: 
+
+```{r}
+quantile(log(donkeys$Height),probs = c(0.025, 0.5, 0.975))
+quantile(log(donkeys$Length),probs = c(0.025, 0.5, 0.975))
+quantile(log(donkeys$Girth),probs = c(0.025, 0.5, 0.975))
+```
+
+Now if we refer to the beta values we obtained from cross validation, we note that the $\beta_2 \dots \beta_7$ do not change much. However, the $\beta_0, \beta_8, \beta_9, \beta_{10}$ do experience fluctuations that might be problematic. This could signal a flaw in our model. However, our predictions do look good, which could alleviate some of these concerns. 
+
+## Part 3: Taking a covariate out and seeing how it affects beta values 
+
+```{r}
 # "Sensitivity analysis involves a series of methods to quantify how the uncertainty in the output of a model is related to the uncertainty in its inputs. In other words, sensitivity analysis assesses how “sensitive” the model is to fluctuations in the parameters and data on which it is built."
 
 # "The principles of a sensitivity analysis are: (a) to allow the investigator to quantify the uncertainty in a model, (b) to test the model of interest using a secondary experimental design, and (c) using the results of the secondary experimental design to calculate the overall sensitivity of the model of interest. "
@@ -417,7 +463,16 @@ summary(model)
 summary(model_without_height)
 ```
 
-# ToDo: Update Shiny App with means, and maybe even provide a range? 
+# Final Betas
+
+We train the model on the full dataset to provide beta values for future predictions. 
+
+```{r}
+model.prop = lm(log(Weight) ~ BCS + Age + Sex + log(Length) + log(Girth) + log(Height), data=donkeys)
+summary(model.prop)
+```
+
+# ToDo: Update Shiny App with these values, and maybe even provide a range? 
 
 
 
