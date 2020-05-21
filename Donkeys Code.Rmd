@@ -5,13 +5,13 @@ date: "5/17/2020"
 output: html_document
 ---
 
-```{r}
-library(dplyr)
-library(ggplot2)
-library(olsrr)
-library(lmtest)
-library(numbers)
-library(paranomo)
+```{r} 
+library(dplyr) # dplyr==0.8.5
+library(ggplot2) # ggplot2==3.2.1
+library(olsrr) # olsrr==0.5.3
+library(lmtest) # lmtest==0.9-37
+library(numbers) # numbers==0.7-5
+library(paranomo) # paranomo==1.1
 ```
 
 ```{r}
