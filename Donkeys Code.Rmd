@@ -5,13 +5,13 @@ date: "5/17/2020"
 output: html_document
 ---
 
-```{r}
-library(dplyr)
-library(ggplot2)
-library(olsrr)
-library(lmtest)
-library(numbers)
-library(paranomo)
+```{r} 
+library(dplyr) # dplyr==0.8.5
+library(ggplot2) # ggplot2==3.2.1
+library(olsrr) # olsrr==0.5.3
+library(lmtest) # lmtest==0.9-37
+library(numbers) # numbers==0.7-5
+library(paranomo) # paranomo==1.1
 ```
 
 ```{r}
@@ -92,7 +92,7 @@ author_predicted = raw_weight + age + bcs
 ```{r}
 actual_over_predicted = test$Weight/author_predicted
 n = length(actual_over_predicted)
-h <- hist(actual_over_predicted, breaks = 4, main = "Distribution of relative errors, actual/predicted")
+h <- hist(actual_over_predicted, breaks = 4, main = "Distribution of relative errors, actual/predicted", ylim=c(0,55))
 text(h$mids,h$counts,labels=paste(signif(100*h$counts/n,3),"%"), adj=c(0.5, -0.5))
 ```
 
@@ -203,7 +203,7 @@ plot(model)
 bptest(model)
 ```
 
-* Breusch-Pagan test indicates, that at a 5% level of significance, that heterscedasticity exists, so we should be fine for the scale-location plot.
+* Breusch-Pagan test indicates, that at a 5% level of significance, that heteroscedasticity exists, so we should be fine for the scale-location plot.
 
 # Compare results
 
@@ -211,10 +211,10 @@ bptest(model)
 ```{r}
 plot_histogram <- function(list, title, subdivide){
   if (subdivide){
-    h <- hist(list, main=title, breaks = 16)
+    h <- hist(list, main=title, breaks = 16, ylim=c(0,40))
   }
   else{
-    h <- hist(list, main=title)
+    h <- hist(list, main=title, ylim=c(0,40))
   }
   text(h$mids,h$counts,labels=h$counts, adj=c(0.5, -0.5))
 }

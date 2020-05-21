@@ -1,4 +1,4 @@
-library(shiny)
+library(shiny) # shiny==1.4.0.2
 
 shinyUI(fluidPage(
   titlePanel("Donkey Weight Calculator"),

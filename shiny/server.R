@@ -1,4 +1,4 @@
-library(shiny)
+library(shiny) # shiny==1.4.0.2
 shinyServer(function(input, output) {
   output$output <- renderText({
     # BCS selection 
