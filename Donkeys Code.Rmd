@@ -163,7 +163,7 @@ summary(model.prop)
 * We note that the beta values for sex is very low, and the p-values are relatively high. This gives us motivation to do variable selection.
 * Height seems to be important 
 
-# Backwards Selection
+# Model Selection
 
 ```{r}
 model = lm(log(Weight) ~ BCS + Age + Sex + log(Length) + log(Girth) + log(Height), data=train)
@@ -190,12 +190,13 @@ model = lm(log(Weight) ~ BCS + Age + log(Length) + log(Girth) + log(Height), dat
 predictions = predict.lm(model, test, interval="confidence")
 our_predicted = exp(predictions[,1])
 summary(model)
+confint(model)
 ```
 
 * Height is still important
 * We also note that we get $\beta_{10} = 0.611, \beta_{11} = 1.47$, which are not equal to our idealized model, but close. This could indicate a cylinder with a "fatter" center, and a more ellipsoidal body. 
 
-# Diagnostics (ideally we can do this for previous model too)
+# Diagnostics
 
 ```{r}
 plot(model)
