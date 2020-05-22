@@ -1,4 +1,4 @@
-library(shiny) # shiny==1.4.0.2
+library(shiny)
 shinyServer(function(input, output) {
   output$output <- renderText({
     # BCS selection 
@@ -41,7 +41,7 @@ shinyServer(function(input, output) {
       Age = 0.07546
     }
     
-    paste(exp(-7.36753) * exp(BCS) * exp(Age) * (input$girth)^1.43196 * (input$height)^0.55024 + (input$length)^0.63123, "kg")
+    paste(exp(-7.36753) * exp(BCS) * exp(Age) * (input$girth)^1.43196 * (input$height)^0.55024 * (input$length)^0.63123, "kg")
 
   })
   
