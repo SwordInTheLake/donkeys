@@ -353,9 +353,9 @@ results(author_predicted,test$Weight)
 results(our_predicted,test_binned$Weight)
 ```
 
-* We note a slight reduction in MSE, and in relative error too. Our model is comparable/better than the given model.
+* We note a modest reduction in MSE, and a slight reduction in relative error too. Our model is comparable/better than the given model.
 
-* Our model has a slightly higher concentration of residues and relative errors towards the center, as reflected by our calculated values. It is significant to notice that this difference is more pronounced for negative residues/relative errors. If we assume an assymmetric loss function (as shown in the graph) that weights negative residues/errors more heavily, our model would be even better, despite us training on a symmetric loss function. 
+* Our model has a slightly higher concentration of residues and relative errors towards the center, as reflected by our calculated values.
 
 # Baby Donkey
 
@@ -447,7 +447,7 @@ asymmetric_loss(author_predicted,test$Weight,alpha)
 asymmetric_loss(our_predicted,test_binned$Weight,alpha)
 ```
 
-* As expected, our model does perform markedly better under the asymmetric loss. 
+* As expected, our model does perform better under the asymmetric loss. 
 * We could train our model with this loss, as shown below.
 
 # Train Model with Asymmetric Loss
@@ -535,6 +535,7 @@ results(predictions,test$Weight)
 ```
 
 * Asymmetric loss on the test data is lower, as expected.
+* This indicates that our given model is more flexible. While we do not know the loss function exactly, it is likely that once known, our model can be trained to perform better than the Milner-Rougier model.
 * However, the MSE and MRSE (a/p) is greater.
 * The histogram shows how relative error (a/p) is now skewed toward postive relative errors (a/p). 
 * Without full knowledge of the level of asymmetry, we shall revert to our original model, since the difference in betas is not especially significant,  we can benefit from confidence intervals from the ols solution, and it might be unwise to skew our predictions without more knowledge of the loss function.
@@ -556,10 +557,11 @@ ret = optim(par = theta, fn = L1_cost, X = X, y = y)
 print(ret$par) # New Beta Values
 print(model$coefficients)
 predictions = exp(X_test%*%(ret$par))
-results(predictions,test$Weight) #Get results for new model
+results(predictions,test_binned$Weight) #Get results for new model
+asymmetric_loss(predictions,test_binned$Weight,alpha)
 ```
 
-* L1 Loss shows greater MSE and MRSE. 
+* L1 Loss shows greater MSE, MRSE, and Asymmetric Loss than our model. 
 
 # Sensitivity Analysis
 
@@ -614,6 +616,3 @@ We train the model on the full dataset to provide beta values for future predict
 model = lm(log(Weight) ~ BCS + Age + log(Length) + log(Girth) + log(Height), data=donkeys_binned)
 summary(model)
 ```
-
-
-
