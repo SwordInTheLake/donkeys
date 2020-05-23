@@ -2,23 +2,20 @@ library(shiny) # shiny==1.4.0.2
 shinyServer(function(input, output) {
   output$output <- renderText({
     # BCS selection 
-    if(input$BCS == "1.5"){
+    if(input$BCS == "1.5/2.0"){
       BCS = 0
     }
-    else if(input$BCS == "2.0"){
-      BCS = 0.0378
-    }
     else if(input$BCS == "2.5"){
-      BCS = 0.05471
+      BCS = 0.02200
     }
     else if(input$BCS == "3.0"){
-      BCS = 0.09130
+      BCS = 0.05846
     }
     else if(input$BCS == "3.5"){
-      BCS = 0.12829
+      BCS = 0.09528
     }
     else if(input$BCS == "4.0"){
-      BCS = 0.14641
+      BCS = 0.11334
     }
     
     # Age selection 
@@ -26,22 +23,22 @@ shinyServer(function(input, output) {
       Age = 0
     }
     else if(input$Age == "2-5"){
-      Age = 0.05494
+      Age = 0.05591
     }
     else if(input$Age == "5-10"){
-      Age = 0.07556
+      Age = 0.07574
     }
     else if(input$Age == "10-15"){
-      Age = 0.08544
+      Age = 0.08598
     }
     else if(input$Age == "15-20"){
-      Age = 0.08511
+      Age = 0.08544
     }
     else if(input$Age == ">20"){
-      Age = 0.07546
+      Age = 0.07547
     }
     
-    paste(exp(-7.36753) * exp(BCS) * exp(Age) * (input$girth)^1.43196 * (input$height)^0.55024 + (input$length)^0.63123, "kg")
+    paste(exp(-7.34347) * exp(BCS) * exp(Age) * (input$girth)^1.43417 * (input$height)^0.54784 * (input$length)^0.63319, "kg")
 
   })
   

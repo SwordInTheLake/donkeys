@@ -11,7 +11,9 @@ library(ggplot2) # ggplot2==3.2.1
 library(olsrr) # olsrr==0.5.3
 library(lmtest) # lmtest==0.9-37
 library(numbers) # numbers==0.7-5
-library(paranomo) # paranomo==1.1
+library(cowplot)
+library(rms)
+load(file = "donkeys.Rda")
 ```
 
 ```{r}
@@ -24,32 +26,45 @@ donkeys <- data.frame(donkeys)
 donkeys <- subset(donkeys, BCS!=4.5 & BCS!=1)
 
 # drop baby donkey 
+baby <- subset(donkeys, Weight == 27)
 donkeys <- subset(donkeys, Weight != 27)
 
 # Order donkeys by weight
 donkeys <- donkeys[order(donkeys$Weight),]
 
+# We bin BCS = 1.5 and BCS = 2, reasons for doing so will be explained later
+donkeys_binned <- donkeys
+donkeys_binned$BCS[donkeys_binned$BCS == 1.5] <- 2
+
 # train-test split, take every 5th donkey for test set, as per Milner and Rouge
 train <- NULL
 test <- NULL 
+train_binned <- NULL
+test_binned <- NULL 
+
 for(i in 1:nrow(donkeys)){
   if (mod(i,5) == 0){
     test <- rbind(test, donkeys[i,])
+    test_binned <- rbind(test_binned, donkeys_binned[i,])
   }
   else{
     train <- rbind(train, donkeys[i,])
+    train_binned <- rbind(train_binned, donkeys_binned[i,])
   }
 }
 
 # Load categorical variables as factors
 
-train$BCS <- as.factor(train$BCS)
-train$Age <- as.factor(train$Age)
-train$Sex <- as.factor(train$Sex)
+factor <- function(data){
+  data$BCS <- as.factor(data$BCS)
+  data$Age <- as.factor(data$Age)
+  data$Sex <- as.factor(data$Sex)
+}
 
-test$BCS <- as.factor(test$BCS)
-test$Age <- as.factor(test$Age)
-test$Sex <- as.factor(test$Sex)
+factor(train)
+factor(test)
+factor(train_binned)
+factor(test_binned)
 
 # Milner and Rouge trained their data only on donkeys with BCS 3, and Age > 5. 
 
@@ -104,7 +119,7 @@ author_predicted = raw_weight + age + bcs #This is predicted weight with additiv
 plot_hist <- function(predicted, actual){
   actual_over_predicted = actual/predicted
   n = length(actual_over_predicted)
-  h <- hist(actual_over_predicted, breaks = 4, main = "Distribution of relative errors, actual/predicted", ylim=c(0,55), xlab = "Relative error, actual/predicted")
+  h <- hist(actual_over_predicted, breaks = 4, main = "Distribution of relative errors, actual/predicted", ylim=c(0,60), xlab = "Relative error, actual/predicted")
   text(h$mids,h$counts,labels=paste(signif(100*h$counts/n,3),"%"), adj=c(0.5, -0.5))
 }
 ```
@@ -138,6 +153,18 @@ plot_predictions(author_predicted)
 
 # EDA
 
+```{r bcs-age, fig.width=8, fig.height=5}
+p5 <- ggplot(data = donkeys) +
+  geom_bar(mapping = aes(x = BCS, color = BCS, fill = BCS)) + labs(title = "Figure 4 - Distribution pf BCS values")
+
+p6 <- ggplot(data = donkeys) +
+  geom_bar(mapping = aes(x = Age, color = Age, fill = Age)) + labs(title = "Figure 5 - Distribution of Age")
+
+plot_grid(p5, p6)
+```
+
+*This might give us motivation to bin BCS = 1.5 with BCS = 2. 
+
 ```{r}
 pairs(Weight~Length + Girth + Height, data = train)
 ```
@@ -158,23 +185,35 @@ pairs(log(Weight)~log(Length) + log(Girth) + log(Height), data = train)
 ```{r}
 model.prop = lm(log(Weight) ~ BCS + Age + Sex + log(Length) + log(Girth) + log(Height), data=train)
 summary(model.prop)
+vif(model.prop)
 ```
 
 * We note that the beta values for sex is very low, and the p-values are relatively high. This gives us motivation to do variable selection.
 * Height seems to be important 
+* We also note that BCS = 2 does not seem to be significant, and standard error is almost as large as the estimate. 
+* VIF values for BCS = 2.5 and BCS = 3 are above 10, this could indicate multicollinearity.
+* Let us bin BCS = 1.5 with BCS = 2
+
+```{r}
+#Binned model
+model.prop = lm(log(Weight) ~ BCS + Age + Sex + log(Length) + log(Girth) + log(Height), data=train_binned)
+summary(model.prop)
+vif(model.prop)
+```
+* Note beta values outside of BCS are not changed significantly
+* Values in BCS are changed because of a shift in the baseline category
+* VIF values are much better, which provides support for this binning
 
 # Model Selection
 
 ```{r}
-model = lm(log(Weight) ~ BCS + Age + Sex + log(Length) + log(Girth) + log(Height), data=train)
-
-stepwise = ols_step_both_aic(model)
+stepwise = ols_step_both_aic(model.prop)
 stepwise
 
-forward = ols_step_forward_aic(model)
+forward = ols_step_forward_aic(model.prop)
 forward
 
-backward = ols_step_backward_aic(model)
+backward = ols_step_backward_aic(model.prop)
 backward
 ```
 
@@ -185,9 +224,9 @@ backward
 # Run model
 
 ```{r}
-#Remove sex
-model = lm(log(Weight) ~ BCS + Age + log(Length) + log(Girth) + log(Height), data=train)
-predictions = predict.lm(model, test, interval="confidence")
+#Remove Sex
+model = lm(log(Weight) ~ BCS + Age + log(Length) + log(Girth) + log(Height), data=train_binned)
+predictions = predict.lm(model, test_binned, interval="confidence")
 our_predicted = exp(predictions[,1])
 summary(model)
 confint(model)
@@ -202,13 +241,7 @@ confint(model)
 plot(model)
 ```
 
-* Everything looks good, except scale-location plot. 
-
-```{r}
-bptest(model)
-```
-
-* Breusch-Pagan test indicates, that at a 5% level of significance, that heteroscedasticity exists, so we should be fine for the scale-location plot.
+* Everything looks good.
 
 # Fit to Test
 
@@ -218,13 +251,13 @@ plot_predictions(our_predicted)
 ```
 
 ```{r}
-# Get Mean Squared Error and Mean Squared Relative Error
+# Get Mean Squared Error and Mean Relative Squared Error
 results <- function(predicted, actual){
   residuals = predicted - actual
   relative_error = predicted/actual
   MSE = mean(residuals^2)
   cat("The MSE is", MSE,'\n')
-  cat("The Mean Squared Relative Error is",mean((relative_error-1)^2),'\n')
+  cat("The Mean Relative Squared Error is",mean((relative_error-1)^2),'\n')
 }
 ```
 
@@ -237,17 +270,17 @@ results(our_predicted,test$Weight)
 ```{r}
 models = c()
 MSEs = c()
-MSREs = c()
+MRSEs = c()
 
-# 5 folds 14 coefficients
-betas = matrix(NA, nrow = 5, ncol = 14)
+# 5 folds 13 coefficients
+betas = matrix(NA, nrow = 5, ncol = 13)
 
 for(i in 1:5){
   
   # split into train and test folds
-  test_indices = seq(i, nrow(donkeys), 5)
-  train_fold = donkeys[-test_indices,]
-  test_fold = donkeys[test_indices,]
+  test_indices = seq(i, nrow(donkeys_binned), 5)
+  train_fold = donkeys_binned[-test_indices,]
+  test_fold = donkeys_binned[test_indices,]
   
   # create a new model on train_fold
   model = lm(log(Weight) ~ BCS + Age + log(Length) + log(Girth) + log(Height), data=train_fold)
@@ -261,10 +294,10 @@ for(i in 1:5){
   residuals = exp(predictions[,1]) - test_fold$Weight
   MSE = mean(residuals^2)
   relative_error = exp(predictions[,1])/test_fold$Weight
-  MSRE = (mean((relative_error-1)^2))
+  MRSE = (mean((relative_error-1)^2))
   
   MSEs = c(MSEs, MSE)
-  MSREs = c(MSREs, MSRE)
+  MRSEs = c(MRSEs, MRSE)
   
 }
 
@@ -278,8 +311,8 @@ sd(MSEs)
 ```
 
 ```{r}
-mean(MSREs)
-sd(MSREs)
+mean(MRSEs)
+sd(MRSEs)
 ```
 
 ```{r}
@@ -287,7 +320,7 @@ plot(1:5, MSEs, type="o", main="MSEs")
 ```
 
 ```{r}
-plot(1:5, MSREs, type="o", main = "Mean Squared Relative Errors")
+plot(1:5, MRSEs, type="o", main = "Mean Relative Squared Errors")
 ```
 
 * We are unable to perform cross-validation on authors' model because we cannot recover loss function
@@ -298,19 +331,34 @@ plot(1:5, MSREs, type="o", main = "Mean Squared Relative Errors")
 ```{r}
 #Compare distributions
 plot_hist(author_predicted, test$Weight)
-plot_hist(our_predicted, test$Weight)
+plot_hist(our_predicted, test_binned$Weight)
 ```
 
-
 ```{r}
-#Compare MSE and MSRE
+#Compare MSE and MRSE
 results(author_predicted,test$Weight)
-results(our_predicted,test$Weight)
+results(our_predicted,test_binned$Weight)
 ```
 
 * We note a slight reduction in MSE, and in relative error too. Our model is comparable/better than the given model.
 
 * Our model has a slightly higher concentration of residues and relative errors towards the center, as reflected by our calculated values. It is significant to notice that this difference is more pronounced for negative residues/relative errors. If we assume an assymmetric loss function (as shown in the graph) that weights negative residues/errors more heavily, our model would be even better, despite us training on a symmetric loss function. 
+
+# Baby Donkey
+
+```{r}
+# We suspect that our model might extend better to out of data samples, especially for baby donkeys.
+our_prediction = exp(predict.lm(model, baby)[1])
+f = -107 + 19.91*log(baby$Girth)
+g = 7.712*log(baby$Length)
+raw_weight = (((f+g)/2) + 1)^2
+age = sapply(as.numeric(baby$Age),age_adjustment)
+bcs = sapply(as.numeric(baby$BCS),bcs_adjustment)
+author_prediction = raw_weight + age + bcs
+cat("The baby donkey weighs", baby$Weight, 'kg. \n')
+cat("Milner and Rougier's model predicts", author_prediction, 'kg. \n')
+cat("Our model predicts", our_prediction, 'kg. \n')
+```
 
 # What about our performance on their loss function? 
 
@@ -345,7 +393,6 @@ new_cost<-function(X, y, par, alpha){
 }
 ```
 
-
 ```{r}
 # We search for the optimal value that we weight the negative residuals by
 alphas = seq(1,2.5,by=0.01)
@@ -367,26 +414,142 @@ print(ret$par) #Beta values we obtain with this alpha
 ```{r}
 #We define the asymmetric loss function
 asymmetric_loss <- function(predicted, actual, alpha){
-  relative_error = predicted/actual-1
+  relative_error = actual/predicted-1
   for (i in 1:length(relative_error)){
     if(relative_error[i]<0){
       relative_error[i]=relative_error[i]*alpha
     }
   }
-  cat("The MSRE is",mean((relative_error)^2),"\n")
+  cat("The Asymmetric Loss is",mean((relative_error)^2),"\n")
 }
+```
+
+```{r}
+#Plot Asymmetric Loss
 ```
 
 ```{r}
 #Compare asymmetric loss on relative error
 asymmetric_loss(author_predicted,test$Weight,alpha)
-asymmetric_loss(our_predicted,test$Weight,alpha)
+asymmetric_loss(our_predicted,test_binned$Weight,alpha)
 ```
 
 * As expected, our model does perform markedly better under the asymmetric loss. 
-* We could train our model with this loss, but this was not done because we felt it was excessive to do so without knowledge of the true loss function. 
-* We hence proceed with a model that minimizes absolute squared error. This can be altered as necessary with more information about potential dangers associated with over/under-predictions, and whether relative error is more appropriate. 
+* We could train our model with this loss, as shown below.
 
+# Train Model with Asymmetric Loss
+
+```{r}
+# Transform factor variables into extra columns
+BCS2.5 = sapply(donkeys_binned$BCS==2.5, as.numeric)
+BCS3.0 = sapply(donkeys_binned$BCS==3.0, as.numeric)
+BCS3.5 = sapply(donkeys_binned$BCS==3.5, as.numeric)
+BCS4.0 = sapply(donkeys_binned$BCS==4.0, as.numeric)
+Age25 = sapply(donkeys_binned$Age == "2-5", as.numeric)
+Age510 = sapply(donkeys_binned$Age == "5-10", as.numeric)
+Age1015 = sapply(donkeys_binned$Age == "10-15", as.numeric)
+Age1520 = sapply(donkeys_binned$Age == "15-20", as.numeric)
+Ageover20 = sapply(donkeys_binned$Age == ">20", as.numeric)
+donkeys_binned = cbind(donkeys_binned,BCS2.5, BCS3.0, BCS3.5, BCS4.0, Age25, Age510, Age1015, Age1520, Ageover20)
+```
+
+```{r}
+# Reobtain train and test splits
+train_assym <- NULL
+test_assym <- NULL 
+for(i in 1:nrow(donkeys_binned)){
+  if (mod(i,5) == 0){
+    test_assym <- rbind(test_assym, donkeys_binned[i,])
+  }
+  else{
+    train_assym <- rbind(train_assym, donkeys_binned[i,])
+  }
+}
+```
+
+```{r}
+# Transform training data into a numeric matrix
+n = nrow(train_assym)
+X <- matrix(NA, nrow = n, ncol = 13)
+X[,1] <- rep(1,n) #Intercept
+X[,2:10] <- as.matrix(train_assym[,9:17])
+X[,11] <- log(train_assym$Length)
+X[,12] <- log(train_assym$Girth)
+X[,13] <- log(train_assym$Height)
+y <- train_assym$Weight
+theta<-c(model$coefficients) # Initialize theta with our estimates from the ols solution
+```
+
+```{r}
+# Transform testing data into a numeric matrix
+n = nrow(test_assym)
+X_test <- matrix(NA, nrow = n, ncol = 13)
+X_test[,1] <- rep(1,n) #Intercept
+X_test[,2:10] <- as.matrix(test_assym[,9:17])
+X_test[,11] <- log(test_assym$Length)
+X_test[,12] <- log(test_assym$Girth)
+X_test[,13] <- log(test_assym$Height)
+```
+
+```{r}
+# Define asymmetric cost function
+new_cost<-function(X, y, par, alpha){  
+  m <- length(y)
+  predictions = exp(X%*%par)
+  relative_error = y/predictions - 1 #Note we use actual/predicted as per Miler and Rougier
+  for (i in 1:length(relative_error)){
+    if(relative_error[i]<0){
+      relative_error[i]=relative_error[i]*alpha #Weight negative relative error
+    }
+  }
+  J <- sum((relative_error)^2)
+  return(J) 
+}
+```
+
+```{r}
+#Obtain new beta values
+ret = optim(par = theta, fn = new_cost, X = X, y = y, alpha = alpha)
+print(ret$par)
+print(model$coefficients)
+```
+
+* We note that when the model is trained under asymmetric loss, the beta values do not change significantly.
+
+```{r}
+# Obtain results for model trained under asymmetric loss
+predictions = exp(X_test%*%(ret$par))
+asymmetric_loss(predictions, test_assym$Weight, alpha)
+plot_hist(predictions, test_assym$Weight)
+results(predictions,test$Weight)
+```
+
+* Asymmetric loss on the test data is lower, as expected.
+* However, the MSE and MRSE (a/p) is greater.
+* The histogram shows how relative error (a/p) is now skewed toward postive relative errors (a/p). 
+* Without full knowledge of the level of asymmetry, we shall revert to our original model, since the difference in betas is not especially significant,  we can benefit from confidence intervals from the ols solution, and it might be unwise to skew our predictions without more knowledge of the loss function.
+* Loss functions for model training can be changed flexibly. We shall demonstrate with L1 loss.
+
+# Training with L1 Loss
+
+```{r}
+L1_cost<-function(X, y, par){  
+  m <- length(y)
+  predictions = exp(X%*%par)
+  J <- sum(abs(y - predictions))
+  return(J) 
+}
+```
+
+```{r}
+ret = optim(par = theta, fn = L1_cost, X = X, y = y)
+print(ret$par) # New Beta Values
+print(model$coefficients)
+predictions = exp(X_test%*%(ret$par))
+results(predictions,test$Weight) #Get results for new model
+```
+
+* L1 Loss shows greater MSE and MRSE. 
 
 # Sensitivity Analysis
 
@@ -395,7 +558,7 @@ asymmetric_loss(our_predicted,test$Weight,alpha)
 * Motivated by the EDA, we fit a linear model and notice that we get the same covariates that are important.
 
 ```{r}
-model = lm(Weight ~ BCS + Age + Sex + Length + Girth + Height, data=train)
+model = lm(Weight ~ BCS + Age + Sex + Length + Girth + Height, data=train_binned)
 
 stepwise = ols_step_both_aic(model)
 stepwise
@@ -404,7 +567,7 @@ stepwise
 * We fit something similar to their model and notice the same thing
 
 ```{r}
-model = lm(sqrt(Weight) ~ BCS + Age + Sex + log(Length) + log(Girth) + log(Height), data=train)
+model = lm(sqrt(Weight) ~ BCS + Age + Sex + log(Length) + log(Girth) + log(Height), data=train_binned)
 
 stepwise = ols_step_both_aic(model)
 stepwise
@@ -413,7 +576,7 @@ stepwise
 * We try a naive model that adds a term for the cylinder
 
 ```{r}
-model = lm(Weight ~ BCS + Age + Sex + Length + Girth + Height + Length*Girth^2, data=train)
+model = lm(Weight ~ BCS + Age + Sex + Length + Girth + Height + Length*Girth^2, data=train_binned)
 
 stepwise = ols_step_both_aic(model)
 stepwise
@@ -438,11 +601,9 @@ quantile(log(donkeys$Girth),probs = c(0.025, 0.5, 0.975))
 We train the model on the full dataset to provide beta values for future predictions. These values are used in the Shiny App provided.
 
 ```{r}
-model.prop = lm(log(Weight) ~ BCS + Age + Sex + log(Length) + log(Girth) + log(Height), data=donkeys)
-summary(model.prop)
+model = lm(log(Weight) ~ BCS + Age + log(Length) + log(Girth) + log(Height), data=donkeys_binned)
+summary(model)
 ```
-
-
 
 
 
