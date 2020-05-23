@@ -6,16 +6,16 @@ shinyServer(function(input, output) {
       BCS = 0
     }
     else if(input$BCS == "2.5"){
-      BCS = 0.02200
+      BCS = 0.02209
     }
     else if(input$BCS == "3.0"){
-      BCS = 0.05846
+      BCS = 0.05858
     }
     else if(input$BCS == "3.5"){
-      BCS = 0.09528
+      BCS = 0.09557
     }
     else if(input$BCS == "4.0"){
-      BCS = 0.11334
+      BCS = 0.11447
     }
     
     # Age selection 
@@ -23,21 +23,12 @@ shinyServer(function(input, output) {
       Age = 0
     }
     else if(input$Age == "2-5"){
-      Age = 0.05591
+      Age = 0.05493
     }
-    else if(input$Age == "5-10"){
-      Age = 0.07574
+    else if(input$Age == ">5"){
+      Age = 0.08139
     }
-    else if(input$Age == "10-15"){
-      Age = 0.08598
-    }
-    else if(input$Age == "15-20"){
-      Age = 0.08544
-    }
-    else if(input$Age == ">20"){
-      Age = 0.07547
-    }
-    paste(exp(-7.34347) * exp(BCS) * exp(Age) * (input$girth)^1.43417 * (input$height)^0.54784 * (input$length)^0.63319, "kg")
+    paste(exp(-7.37828) * exp(BCS) * exp(Age) * (input$girth)^1.44267 * (input$height)^0.54297 * (input$length)^0.63715, "kg")
 
   })
   

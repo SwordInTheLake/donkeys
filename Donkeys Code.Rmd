@@ -13,6 +13,7 @@ library(lmtest) # lmtest==0.9-37
 library(numbers) # numbers==0.7-5
 library(cowplot)
 library(rms)
+library(plyr)
 load(file = "donkeys.Rda")
 ```
 
@@ -31,12 +32,27 @@ donkeys <- subset(donkeys, Weight != 27)
 
 # Order donkeys by weight
 donkeys <- donkeys[order(donkeys$Weight),]
+```
+
+```{r}
+# We bin all ages > 5, this is easier for the vet to determine, since ages are determined by teeth, or by owner's knowledge
+# Doing so also leads to slightly better performance, possibly because Age binning above 5 years was not accurate
+levels(donkeys$Age) <- c(levels(donkeys$Age), ">5")
+donkeys$Age[donkeys$Age == "5-10"] <- ">5"
+donkeys$Age[donkeys$Age == "10-15"] <- ">5"
+donkeys$Age[donkeys$Age == "15-20"] <- ">5"
+donkeys$Age[donkeys$Age == ">20"] <- ">5"
 
 # We bin BCS = 1.5 and BCS = 2, reasons for doing so will be explained later
 donkeys_binned <- donkeys
-donkeys_binned$BCS[donkeys_binned$BCS == 1.5] <- 2
+donkeys_binned$BCS[donkeys_binned$BCS == "1.5"] <- "2"
+donkeys_binned$BCS <- revalue(donkeys_binned$BCS, c("2"="1.5/2"))
+#levels(donkeys_binned$BCS) <- c(levels(donkeys_binned$BCS),"1.5/2")
+#donkeys_binned$BCS[donkeys_binned$BCS == "1.5"] <- "1.5/2"
+#donkeys_binned$BCS[donkeys_binned$BCS == "2"] <- "1.5/2"
 
 # train-test split, take every 5th donkey for test set, as per Milner and Rouge
+# train/test does not have BCS = 1.5/2 binned together, while train_binned/test_binned does
 train <- NULL
 test <- NULL 
 train_binned <- NULL
@@ -52,19 +68,6 @@ for(i in 1:nrow(donkeys)){
     train_binned <- rbind(train_binned, donkeys_binned[i,])
   }
 }
-
-# Load categorical variables as factors
-
-factor <- function(data){
-  data$BCS <- as.factor(data$BCS)
-  data$Age <- as.factor(data$Age)
-  data$Sex <- as.factor(data$Sex)
-}
-
-factor(train)
-factor(test)
-factor(train_binned)
-factor(test_binned)
 
 # Milner and Rouge trained their data only on donkeys with BCS 3, and Age > 5. 
 
@@ -101,7 +104,7 @@ levels(test$BCS)
 ```{r}
 #This implements the additive adjustments
 age_adjustment <- function(num){
-  list = c(-8,-4,0,0,0,0)
+  list = c(-8,-4,0,0,0,0,0)
   return(list[num])
 }
 bcs_adjustment <- function(num){
@@ -154,7 +157,7 @@ plot_predictions(author_predicted)
 # EDA
 
 ```{r bcs-age, fig.width=8, fig.height=5}
-# Code obtained from Wang, Xu, Zhang
+# Code and idea obtained from Wang, Xu, Zhang
 
 p5 <- ggplot(data = donkeys) +
   geom_bar(mapping = aes(x = BCS, color = BCS, fill = BCS)) + labs(title = "Figure 4 - Distribution pf BCS values")
@@ -166,11 +169,14 @@ plot_grid(p5, p6)
 ```
 
 ```{r}
-print(nrow(subset(donkeys, BCS == 1.5)))
+#Get proportions of BCS and Age Values
+prop.table(table(donkeys$BCS)[-c(1,8)])*100
+prop.table(table(donkeys$Age)[-c(3,4,5,6)])*100
 ```
 
 * Less than 1 % of donkeys have BCS 1.5. 
 * This might give us motivation to bin BCS = 1.5 with BCS = 2. 
+* Proportions for Age do not motivate any binning like the Miler and Rougier.
 
 ```{r}
 pairs(Weight~Length + Girth + Height, data = train)
@@ -240,7 +246,7 @@ confint(model)
 ```
 
 * Height is still important
-* We also note that we get $\beta_{10} = 0.611, \beta_{11} = 1.47$, which are not equal to our idealized model, but close. This could indicate a cylinder with a "fatter" center, and a more ellipsoidal body. 
+* We also note that we get $\beta_{10} = 0.610, \beta_{11} = 1.50$, which are not equal to our idealized model, but close. This could indicate a cylinder with a "fatter" center, and a more ellipsoidal body. 
 
 # Diagnostics
 
@@ -269,7 +275,7 @@ results <- function(predicted, actual){
 ```
 
 ```{r}
-results(our_predicted,test$Weight)
+results(our_predicted,test_binned$Weight)
 ```
 
 # Cross-Validation
@@ -279,8 +285,8 @@ models = c()
 MSEs = c()
 MRSEs = c()
 
-# 5 folds 13 coefficients
-betas = matrix(NA, nrow = 5, ncol = 13)
+# 5 folds 10 coefficients
+betas = matrix(NA, nrow = 5, ncol = 10)
 
 for(i in 1:5){
   
@@ -453,11 +459,8 @@ BCS3.0 = sapply(donkeys_binned$BCS==3.0, as.numeric)
 BCS3.5 = sapply(donkeys_binned$BCS==3.5, as.numeric)
 BCS4.0 = sapply(donkeys_binned$BCS==4.0, as.numeric)
 Age25 = sapply(donkeys_binned$Age == "2-5", as.numeric)
-Age510 = sapply(donkeys_binned$Age == "5-10", as.numeric)
-Age1015 = sapply(donkeys_binned$Age == "10-15", as.numeric)
-Age1520 = sapply(donkeys_binned$Age == "15-20", as.numeric)
-Ageover20 = sapply(donkeys_binned$Age == ">20", as.numeric)
-donkeys_binned = cbind(donkeys_binned,BCS2.5, BCS3.0, BCS3.5, BCS4.0, Age25, Age510, Age1015, Age1520, Ageover20)
+Ageover5 = sapply(donkeys_binned$Age == ">5", as.numeric)
+donkeys_binned = cbind(donkeys_binned,BCS2.5, BCS3.0, BCS3.5, BCS4.0, Age25, Ageover5)
 ```
 
 ```{r}
@@ -477,12 +480,12 @@ for(i in 1:nrow(donkeys_binned)){
 ```{r}
 # Transform training data into a numeric matrix
 n = nrow(train_assym)
-X <- matrix(NA, nrow = n, ncol = 13)
+X <- matrix(NA, nrow = n, ncol = 10)
 X[,1] <- rep(1,n) #Intercept
-X[,2:10] <- as.matrix(train_assym[,9:17])
-X[,11] <- log(train_assym$Length)
-X[,12] <- log(train_assym$Girth)
-X[,13] <- log(train_assym$Height)
+X[,2:7] <- as.matrix(train_assym[,9:14])
+X[,8] <- log(train_assym$Length)
+X[,9] <- log(train_assym$Girth)
+X[,10] <- log(train_assym$Height)
 y <- train_assym$Weight
 theta<-c(model$coefficients) # Initialize theta with our estimates from the ols solution
 ```
@@ -490,12 +493,12 @@ theta<-c(model$coefficients) # Initialize theta with our estimates from the ols 
 ```{r}
 # Transform testing data into a numeric matrix
 n = nrow(test_assym)
-X_test <- matrix(NA, nrow = n, ncol = 13)
+X_test <- matrix(NA, nrow = n, ncol = 10)
 X_test[,1] <- rep(1,n) #Intercept
-X_test[,2:10] <- as.matrix(test_assym[,9:17])
-X_test[,11] <- log(test_assym$Length)
-X_test[,12] <- log(test_assym$Girth)
-X_test[,13] <- log(test_assym$Height)
+X_test[,2:7] <- as.matrix(test_assym[,9:14])
+X_test[,8] <- log(test_assym$Length)
+X_test[,9] <- log(test_assym$Girth)
+X_test[,10] <- log(test_assym$Height)
 ```
 
 ```{r}
