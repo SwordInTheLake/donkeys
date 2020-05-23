@@ -154,6 +154,8 @@ plot_predictions(author_predicted)
 # EDA
 
 ```{r bcs-age, fig.width=8, fig.height=5}
+# Code obtained from Wang, Xu, Zhang
+
 p5 <- ggplot(data = donkeys) +
   geom_bar(mapping = aes(x = BCS, color = BCS, fill = BCS)) + labs(title = "Figure 4 - Distribution pf BCS values")
 
@@ -163,7 +165,12 @@ p6 <- ggplot(data = donkeys) +
 plot_grid(p5, p6)
 ```
 
-*This might give us motivation to bin BCS = 1.5 with BCS = 2. 
+```{r}
+print(nrow(subset(donkeys, BCS == 1.5)))
+```
+
+* Less than 1 % of donkeys have BCS 1.5. 
+* This might give us motivation to bin BCS = 1.5 with BCS = 2. 
 
 ```{r}
 pairs(Weight~Length + Girth + Height, data = train)
@@ -185,7 +192,7 @@ pairs(log(Weight)~log(Length) + log(Girth) + log(Height), data = train)
 ```{r}
 model.prop = lm(log(Weight) ~ BCS + Age + Sex + log(Length) + log(Girth) + log(Height), data=train)
 summary(model.prop)
-vif(model.prop)
+vif(model.prop) # Idea obtained from Wang, Xu, Zhang
 ```
 
 * We note that the beta values for sex is very low, and the p-values are relatively high. This gives us motivation to do variable selection.
