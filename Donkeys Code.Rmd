@@ -14,7 +14,6 @@ library(numbers) # numbers==0.7-5
 library(cowplot) # cowplot==1.0.0
 library(rms) # rms==5.1-4
 library(plyr) # plyr==1.8.5
-library(leaps)
 
 load(file = "donkeys.Rda")
 ```
@@ -226,10 +225,12 @@ train_binned_log = subset(train_binned, select = -c(WeightAlt))
 train_binned_log$Length = log(train_binned_log$Length)
 train_binned_log$Weight = log(train_binned_log$Weight)
 train_binned_log$Height = log(train_binned_log$Height)
+train_binned_log$Girth = log(train_binned_log$Girth)
 
 names(train_binned_log)[names(train_binned_log) == "Length"] <- "logLength"
 names(train_binned_log)[names(train_binned_log) == "Weight"] <- "logWeight"
 names(train_binned_log)[names(train_binned_log) == "Height"] <- "logHeight"
+names(train_binned_log)[names(train_binned_log) == "Girth"] <- "logGirth"
 
 
 model.2nd = lm(logWeight~ .^2, data=train_binned_log)
@@ -244,10 +245,10 @@ stepwise = ols_step_both_aic(model.2nd)
 stepwise$model
 
 forward_2nd = ols_step_forward_aic(model.2nd)
-forward_2nd$model
+summary(forward_2nd$model)
 
 backward_2nd = ols_step_backward_aic(model.2nd)
-backward_2nd$model
+summary(backward_2nd$model)
 ```
 
 
@@ -257,11 +258,37 @@ stepwise = ols_step_both_aic(model.3rd)
 stepwise$model
 
 forward_3rd = ols_step_forward_aic(model.3rd)
-forward_3rd$model
+summary(forward_3rd$model)
 
 backward_3rd = ols_step_backward_aic(model.3rd)
-backward_3rd$model
+summary(backward_3rd$model)
 ```
+
+```{r}
+model_specific_2nd = lm( log(Weight) ~ Age + Sex + BCS + log(Length) + log(Height) + log(Girth) + log(Length) ^ 2 + log(Height)^2 + log(Girth)^2, data=train_binned)
+summary(model_specific_2nd)
+
+forward_specific_2nd = ols_step_forward_aic(model_specific_2nd)
+summary(forward_specific_2nd$model)
+
+backward_specific_2nd = ols_step_backward_aic(model_specific_2nd)
+summary(backward_specific_2nd$model)
+```
+
+
+```{r}
+model_specific_3rd = lm(log(Weight) ~ Age + Sex + BCS + log(Length) + log(Height) + log(Girth) + log(Length) ^ 2 + log(Height)^2 + log(Girth)^2 + log(Length)^2 * log(Height) + log(Length)^2 * log(Girth) + log(Height)^2 * log(Girth) + log(Height)^2 * log(Length), log(Girth)^2*log(Length) + log(Girth)^2 * log(Height) + log(Girth)^3 + log(Height)^3 
+                        # + log(Length)^3
+                        , data=train_binned)
+summary(model_specific_3rd)
+
+forward_specific_3rd = ols_step_forward_aic(model_specific_3rd)
+summary(forward_specific_3rd$model)
+
+backward_specific_3rd = ols_step_backward_aic(model_specific_3rd)
+summary(backward_specific_3rd$model)
+```
+
 
 ```{r}
 results <- function(predicted, actual){
@@ -276,19 +303,16 @@ test_binned_log = subset(test_binned, select = -c(WeightAlt))
 test_binned_log$Length = log(test_binned_log$Length)
 test_binned_log$Weight = log(test_binned_log$Weight)
 test_binned_log$Height = log(test_binned_log$Height)
+test_binned_log$Girth = log(test_binned_log$Girth)
 
 
 names(test_binned_log)[names(test_binned_log) == "Length"] <- "logLength"
 names(test_binned_log)[names(test_binned_log) == "Weight"] <- "logWeight"
 names(test_binned_log)[names(test_binned_log) == "Height"] <- "logHeight"
+names(test_binned_log)[names(test_binned_log) == "Girth"] <- "logGirth"
 
 print("squared interaction, forward selected model")
 predictions = predict.lm(forward_2nd$model, test_binned_log, interval="confidence")
-our_predicted = exp(predictions[,1])
-results(our_predicted,exp(test_binned_log$logWeight))
-
-print("cubed interaction, forward selected model")
-predictions = predict.lm(forward_3rd$model, test_binned_log, interval="confidence")
 our_predicted = exp(predictions[,1])
 results(our_predicted,exp(test_binned_log$logWeight))
 
@@ -297,10 +321,38 @@ predictions = predict.lm(backward_2nd$model, test_binned_log, interval="confiden
 our_predicted = exp(predictions[,1])
 results(our_predicted,exp(test_binned_log$logWeight))
 
+print("cubed interaction, forward selected model")
+predictions = predict.lm(forward_3rd$model, test_binned_log, interval="confidence")
+our_predicted = exp(predictions[,1])
+results(our_predicted,exp(test_binned_log$logWeight))
+
 print("cubed interaction, backward selected model")
 predictions = predict.lm(backward_3rd$model, test_binned_log, interval="confidence")
 our_predicted = exp(predictions[,1])
 results(our_predicted,exp(test_binned_log$logWeight))
+
+
+print("squared specific interaction, forward selected model")
+predictions = predict.lm(forward_specific_2nd$model, test_binned, interval="confidence")
+our_predicted = exp(predictions[,1])
+results(our_predicted,test_binned$Weight)
+
+print("squared specific interaction, backward selected model")
+predictions = predict.lm(backward_specific_2nd$model, test_binned, interval="confidence")
+our_predicted = exp(predictions[,1])
+results(our_predicted,test_binned$Weight)
+
+
+print("cubed specific interaction, forward selected model")
+predictions = predict.lm(forward_specific_3rd$model, test_binned, interval="confidence")
+our_predicted = exp(predictions[,1])
+results(our_predicted,test_binned$Weight)
+
+print("cubed specific interaction, backward selected model")
+predictions = predict.lm(backward_specific_3rd$model, test_binned, interval="confidence")
+our_predicted = exp(predictions[,1])
+results(our_predicted,test_binned$Weight)
+
 ```
 
 * it looks like squared interaction effects, backward selected model performed the best 
