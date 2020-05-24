@@ -940,7 +940,6 @@ theta&lt;-c (-103.394,8.057,18.837) #Initialize base on ols values</code></pre>
 # We do not implement a tilt as mentioned in the paper, as this would require optimizing over too many hyperparameters
 
 new_cost&lt;-function(X, y, par, alpha){  
-  m &lt;- length(y)
   predictions = X%*%par
   relative_error = y/predictions - 1 #Note we use actual/predicted as per Miler and Rougier
   for (i in 1:length(relative_error)){
@@ -1030,7 +1029,6 @@ X_test[,9] &lt;- log(test_assym$Girth)
 X_test[,10] &lt;- log(test_assym$Height)</code></pre>
 <pre class="r"><code># Define asymmetric cost function
 new_cost&lt;-function(X, y, par, alpha){  
-  m &lt;- length(y)
   predictions = exp(X%*%par)
   relative_error = y/predictions - 1 #Note we use actual/predicted as per Miler and Rougier
   for (i in 1:length(relative_error)){
@@ -1077,17 +1075,16 @@ asymmetric_loss(predictions, test_assym$Weight, alpha)</code></pre>
 <div id="training-with-l1-loss" class="section level1">
 <h1>Training with L1 Loss</h1>
 <pre class="r"><code>L1_cost&lt;-function(X, y, par){  
-  m &lt;- length(y)
-  predictions = exp(X%*%par)
-  J &lt;- sum(abs(y - predictions))
+  predictions = X%*%par
+  J &lt;- sum(abs(log(y) - predictions))
   return(J) 
 }</code></pre>
 <pre class="r"><code>ret = optim(par = theta, fn = L1_cost, X = X, y = y)
 print(ret$par) # New Beta Values</code></pre>
 <pre><code>## (Intercept)      BCS2.5        BCS3      BCS3.5        BCS4      Age2-5 
-## -7.39984965  0.03936464  0.07478274  0.09457446  0.13190580  0.04511839 
+## -7.39877994  0.04445598  0.07786441  0.09847009  0.13544889  0.06444952 
 ##       Age&gt;5 log(Length)  log(Girth) log(Height) 
-##  0.07026566  0.61168864  1.49274236  0.52071446</code></pre>
+##  0.09031242  0.61003815  1.48997269  0.51995147</code></pre>
 <pre class="r"><code>print(model$coefficients)</code></pre>
 <pre><code>## (Intercept)      BCS2.5        BCS3      BCS3.5        BCS4      Age2-5 
 ## -7.39971016  0.02610020  0.05822931  0.08972600  0.11526380  0.05309151 
@@ -1095,10 +1092,10 @@ print(ret$par) # New Beta Values</code></pre>
 ##  0.08302195  0.61004702  1.49926829  0.51625279</code></pre>
 <pre class="r"><code>predictions = exp(X_test%*%(ret$par))
 results(predictions,test_binned$Weight) #Get results for new model</code></pre>
-<pre><code>## The MSE is 86.60559 
-## The Mean Relative Squared Error is 0.004024166</code></pre>
+<pre><code>## The MSE is 86.92027 
+## The Mean Relative Squared Error is 0.004016107</code></pre>
 <pre class="r"><code>asymmetric_loss(predictions,test_binned$Weight,alpha)</code></pre>
-<pre><code>## The Asymmetric Loss is 0.0117944</code></pre>
+<pre><code>## The Asymmetric Loss is 0.01166026</code></pre>
 <ul>
 <li>L1 Loss shows greater MSE, MRSE, and Asymmetric Loss than our model.</li>
 </ul>

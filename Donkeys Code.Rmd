@@ -393,7 +393,6 @@ theta<-c (-103.394,8.057,18.837) #Initialize base on ols values
 # We do not implement a tilt as mentioned in the paper, as this would require optimizing over too many hyperparameters
 
 new_cost<-function(X, y, par, alpha){  
-  m <- length(y)
   predictions = X%*%par
   relative_error = y/predictions - 1 #Note we use actual/predicted as per Miler and Rougier
   for (i in 1:length(relative_error)){
@@ -504,7 +503,6 @@ X_test[,10] <- log(test_assym$Height)
 ```{r}
 # Define asymmetric cost function
 new_cost<-function(X, y, par, alpha){  
-  m <- length(y)
   predictions = exp(X%*%par)
   relative_error = y/predictions - 1 #Note we use actual/predicted as per Miler and Rougier
   for (i in 1:length(relative_error)){
@@ -545,9 +543,8 @@ results(predictions,test$Weight)
 
 ```{r}
 L1_cost<-function(X, y, par){  
-  m <- length(y)
-  predictions = exp(X%*%par)
-  J <- sum(abs(y - predictions))
+  predictions = X%*%par
+  J <- sum(abs(log(y) - predictions))
   return(J) 
 }
 ```
