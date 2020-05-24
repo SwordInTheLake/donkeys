@@ -438,7 +438,18 @@ asymmetric_loss <- function(predicted, actual, alpha){
 ```
 
 ```{r}
-#Plot Asymmetric Loss
+# Generic Assymetric Loss
+assym_func <- function(x, alpha){
+  if(x < 0){
+    return(alpha^2*x^2)
+  }
+  return(x^2)
+}
+
+x <- seq(-0.4,0.4,0.001)
+Loss <- lapply(x, assym_func, 2.14)
+
+plot(x,Loss, xlab = "Relative Error, Actual/Predicted", main = "Assymetric Loss Function")
 ```
 
 ```{r}
