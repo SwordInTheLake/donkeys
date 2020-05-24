@@ -123,11 +123,19 @@ author_predicted = raw_weight + age + bcs #This is predicted weight with additiv
 plot_hist <- function(predicted, actual){
   actual_over_predicted = actual/predicted
   n = length(actual_over_predicted)
-  h <- hist(actual_over_predicted, breaks = 4, main = "Distribution of relative errors, actual/predicted", ylim=c(0,60), xlab = "Relative error, actual/predicted")
+  h <- hist(actual_over_predicted, breaks = 4, main = "Distribution of Relative Errors, actual/predicted", ylim=c(0,60), xlab = "Relative error, actual/predicted")
   text(h$mids,h$counts,labels=paste(signif(100*h$counts/n,3),"%"), adj=c(0.5, -0.5))
 }
 ```
 
+```{r}
+#Plot a histogram of residuals
+plot_hist_residuals <- function(predicted, actual, breaks){
+  residual = actual - predicted
+  h <- hist(residual, breaks = breaks, main = "Distribution of Residuals, actual - predicted", ylim=c(0,25), xlab = "Residual, Actual Weight - Predicted Weight")
+  text(h$mids,h$counts,labels=h$counts, adj=c(0.5, -0.5))
+}
+```
 
 ```{r}
 # We reproduce their histogram
@@ -312,9 +320,9 @@ for(i in 1:nrow(donkeys)){
 model.2nd = lm(logWeight~ .^2, data=train_binned_log)
 model.3rd = lm(logWeight~ .^3, data=train_binned_log)
 
-model_poly_2nd = lm( logWeight ~ Age + Sex + BCS + logLength + logHeight + logGirth + I(logLength ^ 2) + I(logHeight^2) + I(logGirth^2), data=train_binned_log)
+model_poly_2nd = lm( logWeight ~ Age + Sex + BCS + logLength + logHeight + logGirth + logLength*logHeight + logHeight*logGirth + logLength*logHeight + I(logLength ^ 2) + I(logHeight^2) + I(logGirth^2), data=train_binned_log)
 
-model_poly_3rd = lm(logWeight ~ Age + Sex + BCS + logLength + logHeight + logGirth + I(logLength^2) + I(logHeight^2) + I(logGirth^2) + I(logLength^2*logHeight) + I(logLength^2*logGirth) + I(logHeight^2*logLength) + I(logHeight^2*logGirth) + I(logGirth^2*logLength) + I(logGirth^2*logHeight) + I(logLength^3) + I(logHeight^3) + I(logGirth^3), data=train_binned_log)
+model_poly_3rd = lm(logWeight ~ Age + Sex + BCS + logLength + logHeight + logGirth + logLength*logHeight + logHeight*logGirth + logLength*logHeight + I(logLength^2) + I(logHeight^2) + I(logGirth^2) + I(logLength^2*logHeight) + I(logLength^2*logGirth) + I(logHeight^2*logLength) + I(logHeight^2*logGirth) + I(logGirth^2*logLength) + I(logGirth^2*logHeight) + I(logLength^3) + I(logHeight^3) + I(logGirth^3), data=train_binned_log)
 ```
 
 ```{r warning=FALSE}
@@ -331,6 +339,8 @@ names(backward_3rd$model$coefficients)
 names(backward_poly_2nd$model$coefficients) 
 names(backward_poly_3rd$model$coefficients) 
 ```
+
+* Note that all models include Height, but none have Sex. 
 
 # Cross-Validation
 
@@ -367,7 +377,7 @@ for(i in 1:5){
   backward_2nd = lm(logWeight ~ Age + logHeight +BCS*logLength + Age*logHeight + logLength*logGirth + logHeight*logGirth, data=train_fold)
   backward_3rd = lm(logWeight ~ BCS + logLength + logHeight + logLength*Age + logLength*logGirth + logLength*Age*logGirth + logLength*logHeight*Age + logHeight*logGirth*Age, data=train_fold)
   backward_poly_2nd = lm(logWeight ~ Age + BCS + logLength + logHeight + logGirth + I(logLength^2) + I(logHeight^2) + I(logGirth^2), data=train_fold)
-  backward_poly_3rd = lm(logWeight ~ BCS + Age + logLength + logHeight +logGirth + I(logLength^2) + I(logGirth^2) + I(logLength^2 * logHeight), data=train_fold)
+  backward_poly_3rd = lm(logWeight ~ BCS + Age + logLength + logHeight*logGirth + I(logHeight^2) + I(logGirth^2) + I(logLength^2 * logGirth) + I(logHeight^2 * logGirth) + I(logGirth^2 * logLength) + I(logGirth^2 * logHeight) + I(logHeight^3) + I(logLength^3), data=train_fold)
   
   MSEs_model = c(MSEs_model, store_results(our_model,test_fold)[1])
   MRSEs_model = c(MRSEs_model, store_results(our_model,test_fold)[2])
@@ -387,6 +397,7 @@ display_result <- function(vec, text){
   cat("The mean", text, "is", mean(vec), "with standard deviation", sd(vec), "\n")
 }
 ```
+
 
 ```{r}
 display_result(MSEs_model,"MSE of our model")
@@ -409,6 +420,14 @@ display_result(MRSEs_backward_poly_3rd,"MRSE of 3rd order polynomial terms")
 * The good performance of other models indicate that our actions of binning, including Height, and log transform are probably appropriate.
 
 ```{r}
+model_poly_2nd = lm(log(Weight) ~ BCS + Age + log(Length) + log(Girth) + log(Height) + I(log(Length)^2) + I(log(Girth)^2) + I(log(Height)^2), data=train_binned)
+summary(model_poly_2nd)
+```
+
+* We see that the beta values associated with log(Length) and log(Girth) are around 7 and 12, which is also hard to understand. 
+* We hence continue with our original model. 
+
+```{r}
 plot(1:5, MSEs_model, type="o", main="MSEs")
 ```
 
@@ -422,7 +441,13 @@ plot(1:5, MRSEs_model, type="o", main = "Mean Relative Squared Errors")
 # Comparison with Model 1
 
 ```{r}
-#Compare distributions
+#Compare distributions of residuals
+plot_hist_residuals(our_predicted, test$Weight, 16)
+plot_hist_residuals(author_predicted, test$Weight, 16)
+```
+
+```{r}
+#Compare distributions of relative errors
 plot_hist(author_predicted, test$Weight)
 plot_hist(our_predicted, test_binned$Weight)
 ```
@@ -517,8 +542,8 @@ asymmetric_loss <- function(predicted, actual, alpha){
 ```
 
 ```{r}
-# Generic Assymetric Loss
-assym_func <- function(x, alpha){
+# Generic Asymmetric Loss
+asymm_func <- function(x, alpha){
   if(x < 0){
     return(alpha^2*x^2)
   }
@@ -526,15 +551,9 @@ assym_func <- function(x, alpha){
 }
 
 x <- seq(-0.4,0.4,0.001)
-Loss <- lapply(x, assym_func, 2.14)
+Loss <- lapply(x, asymm_func, alpha)
 
-plot(x,Loss, xlab = "Relative Error, Actual/Predicted", main = "Assymetric Loss Function")
-```
-
-```{r}
-#Compare asymmetric loss on relative error
-asymmetric_loss(author_predicted,test$Weight,alpha)
-asymmetric_loss(our_predicted,test_binned$Weight,alpha)
+plot(x,Loss, xlab = "Relative Error, Actual/Predicted",  main = "Asymmetric Loss Function")
 ```
 
 * As expected, our model does perform better under the asymmetric loss. 
@@ -555,40 +574,40 @@ donkeys_binned = cbind(donkeys_binned,BCS2.5, BCS3.0, BCS3.5, BCS4.0, Age25, Age
 
 ```{r}
 # Reobtain train and test splits
-train_assym <- NULL
-test_assym <- NULL 
+train_asymm <- NULL
+test_asymm <- NULL 
 for(i in 1:nrow(donkeys_binned)){
   if (mod(i,5) == 0){
-    test_assym <- rbind(test_assym, donkeys_binned[i,])
+    test_asymm <- rbind(test_asymm, donkeys_binned[i,])
   }
   else{
-    train_assym <- rbind(train_assym, donkeys_binned[i,])
+    train_asymm <- rbind(train_asymm, donkeys_binned[i,])
   }
 }
 ```
 
 ```{r}
 # Transform training data into a numeric matrix
-n = nrow(train_assym)
+n = nrow(train_asymm)
 X <- matrix(NA, nrow = n, ncol = 10)
 X[,1] <- rep(1,n) #Intercept
-X[,2:7] <- as.matrix(train_assym[,9:14])
-X[,8] <- log(train_assym$Length)
-X[,9] <- log(train_assym$Girth)
-X[,10] <- log(train_assym$Height)
-y <- train_assym$Weight
+X[,2:7] <- as.matrix(train_asymm[,9:14])
+X[,8] <- log(train_asymm$Length)
+X[,9] <- log(train_asymm$Girth)
+X[,10] <- log(train_asymm$Height)
+y <- train_asymm$Weight
 theta<-c(model$coefficients) # Initialize theta with our estimates from the ols solution
 ```
 
 ```{r}
 # Transform testing data into a numeric matrix
-n = nrow(test_assym)
+n = nrow(test_asymm)
 X_test <- matrix(NA, nrow = n, ncol = 10)
 X_test[,1] <- rep(1,n) #Intercept
-X_test[,2:7] <- as.matrix(test_assym[,9:14])
-X_test[,8] <- log(test_assym$Length)
-X_test[,9] <- log(test_assym$Girth)
-X_test[,10] <- log(test_assym$Height)
+X_test[,2:7] <- as.matrix(test_asymm[,9:14])
+X_test[,8] <- log(test_asymm$Length)
+X_test[,9] <- log(test_asymm$Girth)
+X_test[,10] <- log(test_asymm$Height)
 ```
 
 ```{r}
@@ -618,8 +637,8 @@ print(model$coefficients)
 ```{r}
 # Obtain results for model trained under asymmetric loss
 predictions = exp(X_test%*%(ret$par))
-asymmetric_loss(predictions, test_assym$Weight, alpha)
-plot_hist(predictions, test_assym$Weight)
+asymmetric_loss(predictions, test_asymm$Weight, alpha)
+plot_hist(predictions, test_asymm$Weight)
 results(predictions,test$Weight)
 ```
 
@@ -629,6 +648,15 @@ results(predictions,test$Weight)
 * The histogram shows how relative error (a/p) is now skewed toward postive relative errors (a/p). 
 * Without full knowledge of the level of asymmetry, we shall revert to our original model, since the difference in betas is not especially significant,  we can benefit from confidence intervals from the ols solution, and it might be unwise to skew our predictions without more knowledge of the loss function.
 * Loss functions for model training can be changed flexibly. We shall demonstrate with L1 loss.
+
+## Check Summing Assumption
+
+```{r}
+min(test$Weight/author_predicted - 1) #Minimum relative error (a/p) on training set, Model 1
+min(test$Weight/predictions-1) #Minimum relative error (a/p) on training set, Model 3
+```
+
+* The proposed model seems to penalize overdosing more than the function used in Milner and Rougier.
 
 # Training with L1 Loss
 
@@ -689,12 +717,50 @@ stepwise
 The log-log model makes our weight predictions very sensitive to the changes in beta. Let us quantify this: 
 
 ```{r}
-quantile(log(donkeys$Height),probs = c(0.025, 0.5, 0.975))
-quantile(log(donkeys$Length),probs = c(0.025, 0.5, 0.975))
-quantile(log(donkeys$Girth),probs = c(0.025, 0.5, 0.975))
+model = lm(log(Weight) ~ BCS + Age + log(Length) + log(Girth) + log(Height), data=train_binned)
 ```
 
-* This indicates that a unit change to a $\beta$ involving Length, Height or Girth, leads to an over $450\%$ change in weight.
+
+```{r}
+length_quantiles = quantile(donkeys$Length,probs = c(0.025, 0.5, 0.975))
+girth_quantiles = quantile(donkeys$Girth,probs = c(0.025, 0.5, 0.975))
+height_quantiles = quantile(donkeys$Height,probs = c(0.025, 0.5, 0.975))
+```
+
+```{r}
+beta_7 = model$coefficients[8]
+beta_8 = model$coefficients[9]
+beta_9 = model$coefficients[10]
+```
+
+```{r}
+# Obtain changes to weight with 1cm change in numeric variables
+(((length_quantiles+1)^beta_7)/(length_quantiles^beta_7)-1)*100
+(((girth_quantiles+1)^beta_8)/(girth_quantiles^beta_8)-1)*100
+(((height_quantiles+1)^beta_9)/(height_quantiles^beta_9)-1)*100
+```
+
+```{r}
+(exp(model$coefficients[2:7])-1)*100 # Percentage increase, with respect to the baseline category
+x = exp(model$coefficients[2:7])
+# Misclassification error is the error associated with wrongly categorizing a donkey into a "neighboring" category, e.g. classifying a donkey to be BCS = 3 when it rightfully is BCS = 2.5 or BCS = 3.5. We take the maximum over both errors. 
+misclassification_error = pmax((c(1, x[1], x[2]/x[1], x[3]/x[2], x[4]/x[3], 1, x[5],x[6]/x[5])-1)*100,
+(1-c(1/x[1], x[1]/x[2], x[2]/x[3], x[3]/x[4], 1, 1/x[5], x[5]/x[6], 1))*100)
+mean(misclassification_error)*median(donkeys$Weight)*0.01 #Misclassification error for Model 3
+mean(c(4,4,5,6,8,8,4,4,4)) #Misclassification error for Model 1
+```
+
+```{r}
+(exp(1)-1)*100 #Percentage Increase with \beta_0 to \beta_6
+```
+
+```{r}
+# Percentage Increase to Weight, with a 0.1 increase of \beta_7, \beta_8, \beta_9
+# We assess this effect on the median of donkey length, height and girth
+(median(donkeys$Length)^0.1-1)*100
+(median(donkeys$Height)^0.1-1)*100
+(median(donkeys$Girth)^0.1-1)*100
+```
 
 # Final Betas
 
