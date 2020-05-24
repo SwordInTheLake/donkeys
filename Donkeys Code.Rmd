@@ -14,6 +14,8 @@ library(numbers) # numbers==0.7-5
 library(cowplot) # cowplot==1.0.0
 library(rms) # rms==5.1-4
 library(plyr) # plyr==1.8.5
+library(leaps)
+
 load(file = "donkeys.Rda")
 ```
 
@@ -217,6 +219,97 @@ vif(model.prop)
 * Values in BCS are changed because of a shift in the baseline category
 * VIF values are much better, which provides support for this binning
 
+# Test for Interactions
+
+```{r}
+train_binned_log = subset(train_binned, select = -c(WeightAlt))
+train_binned_log$Length = log(train_binned_log$Length)
+train_binned_log$Weight = log(train_binned_log$Weight)
+train_binned_log$Height = log(train_binned_log$Height)
+
+names(train_binned_log)[names(train_binned_log) == "Length"] <- "logLength"
+names(train_binned_log)[names(train_binned_log) == "Weight"] <- "logWeight"
+names(train_binned_log)[names(train_binned_log) == "Height"] <- "logHeight"
+
+
+model.2nd = lm(logWeight~ .^2, data=train_binned_log)
+summary(model.2nd)
+
+model.3rd = lm(logWeight~ .^3, data=train_binned_log)
+summary(model.2nd)
+```
+
+```{r}
+stepwise = ols_step_both_aic(model.2nd)
+stepwise$model
+
+forward_2nd = ols_step_forward_aic(model.2nd)
+forward_2nd$model
+
+backward_2nd = ols_step_backward_aic(model.2nd)
+backward_2nd$model
+```
+
+
+
+```{r}
+stepwise = ols_step_both_aic(model.3rd)
+stepwise$model
+
+forward_3rd = ols_step_forward_aic(model.3rd)
+forward_3rd$model
+
+backward_3rd = ols_step_backward_aic(model.3rd)
+backward_3rd$model
+```
+
+```{r}
+results <- function(predicted, actual){
+  residuals = predicted - actual
+  relative_error = predicted/actual
+  MSE = mean(residuals^2)
+  cat("The MSE is", MSE,'\n')
+  cat("The Mean Relative Squared Error is",mean((relative_error-1)^2),'\n\n')
+}
+
+test_binned_log = subset(test_binned, select = -c(WeightAlt))
+test_binned_log$Length = log(test_binned_log$Length)
+test_binned_log$Weight = log(test_binned_log$Weight)
+test_binned_log$Height = log(test_binned_log$Height)
+
+
+names(test_binned_log)[names(test_binned_log) == "Length"] <- "logLength"
+names(test_binned_log)[names(test_binned_log) == "Weight"] <- "logWeight"
+names(test_binned_log)[names(test_binned_log) == "Height"] <- "logHeight"
+
+print("squared interaction, forward selected model")
+predictions = predict.lm(forward_2nd$model, test_binned_log, interval="confidence")
+our_predicted = exp(predictions[,1])
+results(our_predicted,exp(test_binned_log$logWeight))
+
+print("cubed interaction, forward selected model")
+predictions = predict.lm(forward_3rd$model, test_binned_log, interval="confidence")
+our_predicted = exp(predictions[,1])
+results(our_predicted,exp(test_binned_log$logWeight))
+
+print("squared interaction, backward selected model")
+predictions = predict.lm(backward_2nd$model, test_binned_log, interval="confidence")
+our_predicted = exp(predictions[,1])
+results(our_predicted,exp(test_binned_log$logWeight))
+
+print("cubed interaction, backward selected model")
+predictions = predict.lm(backward_3rd$model, test_binned_log, interval="confidence")
+our_predicted = exp(predictions[,1])
+results(our_predicted,exp(test_binned_log$logWeight))
+```
+
+* it looks like squared interaction effects, backward selected model performed the best 
+
+```{r}
+summary(backward_2nd$model)
+```
+
+
 # Model Selection
 
 ```{r}
@@ -224,10 +317,10 @@ stepwise = ols_step_both_aic(model.prop)
 stepwise
 
 forward = ols_step_forward_aic(model.prop)
-forward
+summary(forward$model)
 
 backward = ols_step_backward_aic(model.prop)
-backward
+summary(backward$model)
 ```
 
 * We see that indeed, sex is irrelevant. However, unlike the original paper, Height seems to be relevant.
