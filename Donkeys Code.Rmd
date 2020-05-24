@@ -218,150 +218,6 @@ vif(model.prop)
 * Values in BCS are changed because of a shift in the baseline category
 * VIF values are much better, which provides support for this binning
 
-# Test for Interactions
-
-```{r}
-train_binned_log = subset(train_binned, select = -c(WeightAlt))
-train_binned_log$Length = log(train_binned_log$Length)
-train_binned_log$Weight = log(train_binned_log$Weight)
-train_binned_log$Height = log(train_binned_log$Height)
-train_binned_log$Girth = log(train_binned_log$Girth)
-
-names(train_binned_log)[names(train_binned_log) == "Length"] <- "logLength"
-names(train_binned_log)[names(train_binned_log) == "Weight"] <- "logWeight"
-names(train_binned_log)[names(train_binned_log) == "Height"] <- "logHeight"
-names(train_binned_log)[names(train_binned_log) == "Girth"] <- "logGirth"
-
-
-model.2nd = lm(logWeight~ .^2, data=train_binned_log)
-summary(model.2nd)
-
-model.3rd = lm(logWeight~ .^3, data=train_binned_log)
-summary(model.2nd)
-```
-
-```{r warning=FALSE}
-stepwise = ols_step_both_aic(model.2nd)
-stepwise$model
-
-forward_2nd = ols_step_forward_aic(model.2nd)
-summary(forward_2nd$model)
-
-backward_2nd = ols_step_backward_aic(model.2nd)
-summary(backward_2nd$model)
-```
-
-
-
-```{r warning=FALSE}
-stepwise = ols_step_both_aic(model.3rd)
-stepwise$model
-
-forward_3rd = ols_step_forward_aic(model.3rd)
-summary(forward_3rd$model)
-
-backward_3rd = ols_step_backward_aic(model.3rd)
-summary(backward_3rd$model)
-```
-
-```{r}
-model_specific_2nd = lm( log(Weight) ~ Age + Sex + BCS + log(Length) + log(Height) + log(Girth) + log(Length) ^ 2 + log(Height)^2 + log(Girth)^2, data=train_binned)
-summary(model_specific_2nd)
-
-forward_specific_2nd = ols_step_forward_aic(model_specific_2nd)
-summary(forward_specific_2nd$model)
-
-backward_specific_2nd = ols_step_backward_aic(model_specific_2nd)
-summary(backward_specific_2nd$model)
-```
-
-
-```{r}
-model_specific_3rd = lm(log(Weight) ~ Age + Sex + BCS + log(Length) + log(Height) + log(Girth) + log(Length) ^ 2 + log(Height)^2 + log(Girth)^2 + log(Length)^2 * log(Height) + log(Length)^2 * log(Girth) + log(Height)^2 * log(Girth) + log(Height)^2 * log(Length), log(Girth)^2*log(Length) + log(Girth)^2 * log(Height) + log(Girth)^3 + log(Height)^3 
-                        # + log(Length)^3
-                        , data=train_binned)
-summary(model_specific_3rd)
-
-forward_specific_3rd = ols_step_forward_aic(model_specific_3rd)
-summary(forward_specific_3rd$model)
-
-backward_specific_3rd = ols_step_backward_aic(model_specific_3rd)
-summary(backward_specific_3rd$model)
-```
-
-
-```{r}
-results <- function(predicted, actual){
-  residuals = predicted - actual
-  relative_error = predicted/actual
-  MSE = mean(residuals^2)
-  cat("The MSE is", MSE,'\n')
-  cat("The Mean Relative Squared Error is",mean((relative_error-1)^2),'\n\n')
-}
-
-test_binned_log = subset(test_binned, select = -c(WeightAlt))
-test_binned_log$Length = log(test_binned_log$Length)
-test_binned_log$Weight = log(test_binned_log$Weight)
-test_binned_log$Height = log(test_binned_log$Height)
-test_binned_log$Girth = log(test_binned_log$Girth)
-
-
-names(test_binned_log)[names(test_binned_log) == "Length"] <- "logLength"
-names(test_binned_log)[names(test_binned_log) == "Weight"] <- "logWeight"
-names(test_binned_log)[names(test_binned_log) == "Height"] <- "logHeight"
-names(test_binned_log)[names(test_binned_log) == "Girth"] <- "logGirth"
-
-print("squared interaction, forward selected model")
-predictions = predict.lm(forward_2nd$model, test_binned_log, interval="confidence")
-our_predicted = exp(predictions[,1])
-results(our_predicted,exp(test_binned_log$logWeight))
-
-print("squared interaction, backward selected model")
-predictions = predict.lm(backward_2nd$model, test_binned_log, interval="confidence")
-our_predicted = exp(predictions[,1])
-results(our_predicted,exp(test_binned_log$logWeight))
-
-print("cubed interaction, forward selected model")
-predictions = predict.lm(forward_3rd$model, test_binned_log, interval="confidence")
-our_predicted = exp(predictions[,1])
-results(our_predicted,exp(test_binned_log$logWeight))
-
-print("cubed interaction, backward selected model")
-predictions = predict.lm(backward_3rd$model, test_binned_log, interval="confidence")
-our_predicted = exp(predictions[,1])
-results(our_predicted,exp(test_binned_log$logWeight))
-
-
-print("squared specific interaction, forward selected model")
-predictions = predict.lm(forward_specific_2nd$model, test_binned, interval="confidence")
-our_predicted = exp(predictions[,1])
-results(our_predicted,test_binned$Weight)
-
-print("squared specific interaction, backward selected model")
-predictions = predict.lm(backward_specific_2nd$model, test_binned, interval="confidence")
-our_predicted = exp(predictions[,1])
-results(our_predicted,test_binned$Weight)
-
-
-print("cubed specific interaction, forward selected model")
-predictions = predict.lm(forward_specific_3rd$model, test_binned, interval="confidence")
-our_predicted = exp(predictions[,1])
-results(our_predicted,test_binned$Weight)
-
-print("cubed specific interaction, backward selected model")
-predictions = predict.lm(backward_specific_3rd$model, test_binned, interval="confidence")
-our_predicted = exp(predictions[,1])
-results(our_predicted,test_binned$Weight)
-
-```
-
-* it looks like squared interaction effects, backward selected model performed the best 
-
-```{r}
-summary(backward_2nd$model)
-```
-
-
 # Model Selection
 
 ```{r}
@@ -415,7 +271,7 @@ results <- function(predicted, actual){
   relative_error = predicted/actual
   MSE = mean(residuals^2)
   cat("The MSE is", MSE,'\n')
-  cat("The Mean Relative Squared Error is",mean((relative_error-1)^2),'\n')
+  cat("The Mean Relative Squared Error is",mean((relative_error-1)^2),'\n\n')
 }
 ```
 
@@ -423,62 +279,141 @@ results <- function(predicted, actual){
 results(our_predicted,test_binned$Weight)
 ```
 
+# Test for Interactions
+
+```{r}
+donkeys_binned_log = subset(donkeys_binned, select = -c(WeightAlt))
+donkeys_binned_log$Length = log(donkeys_binned_log$Length)
+donkeys_binned_log$Weight = log(donkeys_binned_log$Weight)
+donkeys_binned_log$Height = log(donkeys_binned_log$Height)
+donkeys_binned_log$Girth = log(donkeys_binned_log$Girth)
+
+names(donkeys_binned_log)[names(donkeys_binned_log) == "Length"] <- "logLength"
+names(donkeys_binned_log)[names(donkeys_binned_log) == "Weight"] <- "logWeight"
+names(donkeys_binned_log)[names(donkeys_binned_log) == "Height"] <- "logHeight"
+names(donkeys_binned_log)[names(donkeys_binned_log) == "Girth"] <- "logGirth"
+```
+
+```{r}
+train_binned_log <- NULL
+test_binned_log <- NULL 
+
+for(i in 1:nrow(donkeys)){
+  if (mod(i,5) == 0){
+    test_binned_log <- rbind(test_binned_log, donkeys_binned_log[i,])
+  }
+  else{
+    train_binned_log <- rbind(train_binned_log, donkeys_binned_log[i,])
+  }
+}
+```
+
+```{r}
+model.2nd = lm(logWeight~ .^2, data=train_binned_log)
+model.3rd = lm(logWeight~ .^3, data=train_binned_log)
+
+model_poly_2nd = lm( logWeight ~ Age + Sex + BCS + logLength + logHeight + logGirth + I(logLength ^ 2) + I(logHeight^2) + I(logGirth^2), data=train_binned_log)
+
+model_poly_3rd = lm(logWeight ~ Age + Sex + BCS + logLength + logHeight + logGirth + I(logLength^2) + I(logHeight^2) + I(logGirth^2) + I(logLength^2*logHeight) + I(logLength^2*logGirth) + I(logHeight^2*logLength) + I(logHeight^2*logGirth) + I(logGirth^2*logLength) + I(logGirth^2*logHeight) + I(logLength^3) + I(logHeight^3) + I(logGirth^3), data=train_binned_log)
+```
+
+```{r warning=FALSE}
+backward_2nd = ols_step_backward_aic(model.2nd)
+backward_3rd = ols_step_backward_aic(model.3rd)
+
+backward_poly_2nd = ols_step_backward_aic(model_poly_2nd)
+backward_poly_3rd = ols_step_backward_aic(model_poly_3rd)
+```
+
+```{r}
+names(backward_2nd$model$coefficients) 
+names(backward_3rd$model$coefficients) 
+names(backward_poly_2nd$model$coefficients) 
+names(backward_poly_3rd$model$coefficients) 
+```
+
 # Cross-Validation
 
 ```{r}
-models = c()
-MSEs = c()
-MRSEs = c()
+MSEs_model = c()
+MRSEs_model = c()
+MSEs_backward_2nd = c()
+MRSEs_backward_2nd = c()
+MSEs_backward_3rd = c()
+MRSEs_backward_3rd = c()
+MSEs_backward_poly_2nd = c()
+MRSEs_backward_poly_2nd = c()
+MSEs_backward_poly_3rd = c()
+MRSEs_backward_poly_3rd = c()
 
-# 5 folds 10 coefficients
-betas = matrix(NA, nrow = 5, ncol = 10)
+store_results <- function(model,test_fold){
+  predictions = predict.lm(model, test_fold, interval="confidence")
+  residuals = exp(predictions[,1]) - exp(test_fold$logWeight)
+  MSE = mean(residuals^2)
+  relative_error = exp(predictions[,1])/exp(test_fold$logWeight)
+  MRSE = (mean((relative_error-1)^2))  
+  return(c(MSE,MRSE))
+}
 
 for(i in 1:5){
   
   # split into train and test folds
-  test_indices = seq(i, nrow(donkeys_binned), 5)
-  train_fold = donkeys_binned[-test_indices,]
-  test_fold = donkeys_binned[test_indices,]
+  test_indices = seq(i, nrow(donkeys_binned_log), 5)
+  train_fold = donkeys_binned_log[-test_indices,]
+  test_fold = donkeys_binned_log[test_indices,]
   
-  # create a new model on train_fold
-  model = lm(log(Weight) ~ BCS + Age + log(Length) + log(Girth) + log(Height), data=train_fold)
-
-  # save coefficients
-  betas[i,] = model$coefficients
-  models = c(models, model)
+  #create a new model on train_fold
+  our_model = lm(logWeight ~ BCS + Age + logLength + logGirth + logHeight, data=train_fold)
+  backward_2nd = lm(logWeight ~ Age + logHeight +BCS*logLength + Age*logHeight + logLength*logGirth + logHeight*logGirth, data=train_fold)
+  backward_3rd = lm(logWeight ~ BCS + logLength + logHeight + logLength*Age + logLength*logGirth + logLength*Age*logGirth + logLength*logHeight*Age + logHeight*logGirth*Age, data=train_fold)
+  backward_poly_2nd = lm(logWeight ~ Age + BCS + logLength + logHeight + logGirth + I(logLength^2) + I(logHeight^2) + I(logGirth^2), data=train_fold)
+  backward_poly_3rd = lm(logWeight ~ BCS + Age + logLength + logHeight +logGirth + I(logLength^2) + I(logGirth^2) + I(logLength^2 * logHeight), data=train_fold)
   
-  # save MSE and mean relative error
-  predictions = predict.lm(model, test_fold, interval="confidence")
-  residuals = exp(predictions[,1]) - test_fold$Weight
-  MSE = mean(residuals^2)
-  relative_error = exp(predictions[,1])/test_fold$Weight
-  MRSE = (mean((relative_error-1)^2))
-  
-  MSEs = c(MSEs, MSE)
-  MRSEs = c(MRSEs, MRSE)
-  
+  MSEs_model = c(MSEs_model, store_results(our_model,test_fold)[1])
+  MRSEs_model = c(MRSEs_model, store_results(our_model,test_fold)[2])
+  MSEs_backward_2nd = c(MSEs_backward_2nd, store_results(backward_2nd,test_fold)[1])
+  MRSEs_backward_2nd = c(MRSEs_backward_2nd, store_results(backward_2nd,test_fold)[2])
+  MSEs_backward_3rd = c(MSEs_backward_3rd, store_results(backward_3rd,test_fold)[1])
+  MRSEs_backward_3rd = c(MRSEs_backward_3rd, store_results(backward_3rd,test_fold)[2])
+  MSEs_backward_poly_2nd = c(MSEs_backward_poly_2nd, store_results(backward_poly_2nd,test_fold)[1])
+  MRSEs_backward_poly_2nd = c(MRSEs_backward_poly_2nd, store_results(backward_poly_2nd,test_fold)[2])
+  MSEs_backward_poly_3rd = c(MSEs_backward_poly_3rd, store_results(backward_poly_3rd,test_fold)[1])
+  MRSEs_backward_poly_3rd = c(MRSEs_backward_poly_3rd, store_results(backward_poly_3rd,test_fold)[2])
 }
-
-colnames(betas) = names(model$coefficients)
-
 ```
 
 ```{r}
-mean(MSEs)
-sd(MSEs)
+display_result <- function(vec, text){
+  cat("The mean", text, "is", mean(vec), "with standard deviation", sd(vec), "\n")
+}
 ```
 
 ```{r}
-mean(MRSEs)
-sd(MRSEs)
+display_result(MSEs_model,"MSE of our model")
+display_result(MSEs_backward_2nd,"MSE of pairwise interactions")
+display_result(MSEs_backward_3rd,"MSE of three-way interactions")
+display_result(MSEs_backward_poly_2nd,"MSE of 2nd order polynomial terms")
+display_result(MSEs_backward_poly_3rd,"MSE of 3rd order polynomial terms")
 ```
 
 ```{r}
-plot(1:5, MSEs, type="o", main="MSEs")
+display_result(MRSEs_model,"MRSE of our model")
+display_result(MRSEs_backward_2nd,"MRSE of pairwise interactions")
+display_result(MRSEs_backward_3rd,"MRSE of three-way interactions")
+display_result(MRSEs_backward_poly_2nd,"MRSE of 2nd order polynomial terms")
+display_result(MRSEs_backward_poly_3rd,"MRSE of 3rd order polynomial terms")
+```
+
+* There is a reduction in error with adding other interaction/polynomial terms. However, this reduction is not significant, especially when considering the standard deviation of the MSEs and MRSEs. 
+* We have opted to continue with our simple model, for its ease of interpretability (it is not immediately interpretable what polynomial log terms represent). However, we believe that adding these terms is a viable approach.
+* The good performance of other models indicate that our actions of binning, including Height, and log transform are probably appropriate.
+
+```{r}
+plot(1:5, MSEs_model, type="o", main="MSEs")
 ```
 
 ```{r}
-plot(1:5, MRSEs, type="o", main = "Mean Relative Squared Errors")
+plot(1:5, MRSEs_model, type="o", main = "Mean Relative Squared Errors")
 ```
 
 * We are unable to perform cross-validation on authors' model because we cannot recover loss function
