@@ -6,6 +6,7 @@ output: html_document
 ---
 
 ```{r} 
+# One will need to download these packages
 library(dplyr) # dplyr==0.8.5
 library(ggplot2) # ggplot2==3.2.1
 library(olsrr) # olsrr==0.5.3
@@ -717,9 +718,9 @@ stepwise
 The log-log model makes our weight predictions very sensitive to the changes in beta. Let us quantify this: 
 
 ```{r}
+#Reset model
 model = lm(log(Weight) ~ BCS + Age + log(Length) + log(Girth) + log(Height), data=train_binned)
 ```
-
 
 ```{r}
 length_quantiles = quantile(donkeys$Length,probs = c(0.025, 0.5, 0.975))
@@ -750,6 +751,8 @@ mean(misclassification_error)*median(donkeys$Weight)*0.01 #Misclassification err
 mean(c(4,4,5,6,8,8,4,4,4)) #Misclassification error for Model 1
 ```
 
+* The misclassification error for Model 3 is not very much greater than that for Model 1. Hence, even if there are errors in categorizing donkeys, there might not be huge errors due to proportionate adjustments.
+
 ```{r}
 (exp(1)-1)*100 #Percentage Increase with \beta_0 to \beta_6
 ```
@@ -770,3 +773,5 @@ We train the model on the full dataset to provide beta values for future predict
 model = lm(log(Weight) ~ BCS + Age + log(Length) + log(Girth) + log(Height), data=donkeys_binned)
 summary(model)
 ```
+
+* Again, notice that beta values do not change much. 
