@@ -11,9 +11,9 @@ library(ggplot2) # ggplot2==3.2.1
 library(olsrr) # olsrr==0.5.3
 library(lmtest) # lmtest==0.9-37
 library(numbers) # numbers==0.7-5
-library(cowplot)
-library(rms)
-library(plyr)
+library(cowplot) # cowplot==1.0.0
+library(rms) # rms==5.1-4
+library(plyr) # plyr==1.8.5
 load(file = "donkeys.Rda")
 ```
 
