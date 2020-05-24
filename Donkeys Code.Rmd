@@ -240,7 +240,7 @@ model.3rd = lm(logWeight~ .^3, data=train_binned_log)
 summary(model.2nd)
 ```
 
-```{r}
+```{r warning=FALSE}
 stepwise = ols_step_both_aic(model.2nd)
 stepwise$model
 
@@ -253,7 +253,7 @@ summary(backward_2nd$model)
 
 
 
-```{r}
+```{r warning=FALSE}
 stepwise = ols_step_both_aic(model.3rd)
 stepwise$model
 

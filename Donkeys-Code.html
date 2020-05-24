@@ -715,6 +715,629 @@ summary(model.prop)</code></pre>
 <li>VIF values are much better, which provides support for this binning</li>
 </ul>
 </div>
+<div id="test-for-interactions" class="section level1">
+<h1>Test for Interactions</h1>
+<pre class="r"><code>train_binned_log = subset(train_binned, select = -c(WeightAlt))
+train_binned_log$Length = log(train_binned_log$Length)
+train_binned_log$Weight = log(train_binned_log$Weight)
+train_binned_log$Height = log(train_binned_log$Height)
+train_binned_log$Girth = log(train_binned_log$Girth)
+
+names(train_binned_log)[names(train_binned_log) == &quot;Length&quot;] &lt;- &quot;logLength&quot;
+names(train_binned_log)[names(train_binned_log) == &quot;Weight&quot;] &lt;- &quot;logWeight&quot;
+names(train_binned_log)[names(train_binned_log) == &quot;Height&quot;] &lt;- &quot;logHeight&quot;
+names(train_binned_log)[names(train_binned_log) == &quot;Girth&quot;] &lt;- &quot;logGirth&quot;
+
+
+model.2nd = lm(logWeight~ .^2, data=train_binned_log)
+summary(model.2nd)</code></pre>
+<pre><code>## 
+## Call:
+## lm(formula = logWeight ~ .^2, data = train_binned_log)
+## 
+## Residuals:
+##       Min        1Q    Median        3Q       Max 
+## -0.147158 -0.028660 -0.001443  0.031591  0.135996 
+## 
+## Coefficients: (4 not defined because of singularities)
+##                        Estimate Std. Error t value Pr(&gt;|t|)  
+## (Intercept)           29.996442  35.687160   0.841   0.4011  
+## BCS2.5                 1.375864   2.042531   0.674   0.5010  
+## BCS3                   1.561776   2.030491   0.769   0.4423  
+## BCS3.5                 0.792406   2.606143   0.304   0.7613  
+## BCS4                   5.901846   4.141873   1.425   0.1550  
+## Age2-5                 2.887420   1.755011   1.645   0.1008  
+## Age&gt;5                  3.045727   2.005103   1.519   0.1296  
+## Sexgelding             1.251415   1.296567   0.965   0.3351  
+## Sexfemale              1.430162   0.882859   1.620   0.1061  
+## logLength              0.009310   7.533166   0.001   0.9990  
+## logGirth               6.475049  10.446280   0.620   0.5357  
+## logHeight            -21.162141  10.356602  -2.043   0.0417 *
+## BCS2.5:Age2-5          0.128302   0.052208   2.458   0.0144 *
+## BCS3:Age2-5            0.132585   0.056741   2.337   0.0200 *
+## BCS3.5:Age2-5          0.001806   0.043476   0.042   0.9669  
+## BCS4:Age2-5                  NA         NA      NA       NA  
+## BCS2.5:Age&gt;5           0.116338   0.060278   1.930   0.0544 .
+## BCS3:Age&gt;5             0.141453   0.063047   2.244   0.0254 *
+## BCS3.5:Age&gt;5                 NA         NA      NA       NA  
+## BCS4:Age&gt;5                   NA         NA      NA       NA  
+## BCS2.5:Sexgelding     -0.048661   0.044519  -1.093   0.2751  
+## BCS3:Sexgelding       -0.058127   0.043198  -1.346   0.1792  
+## BCS3.5:Sexgelding     -0.058371   0.050811  -1.149   0.2514  
+## BCS4:Sexgelding       -0.040203   0.064839  -0.620   0.5356  
+## BCS2.5:Sexfemale       0.034759   0.032224   1.079   0.2814  
+## BCS3:Sexfemale         0.034718   0.032130   1.081   0.2806  
+## BCS3.5:Sexfemale       0.064827   0.037042   1.750   0.0809 .
+## BCS4:Sexfemale        -0.019810   0.059397  -0.334   0.7389  
+## BCS2.5:logLength      -0.403981   0.261158  -1.547   0.1227  
+## BCS3:logLength        -0.195672   0.257721  -0.759   0.4482  
+## BCS3.5:logLength      -0.135188   0.320571  -0.422   0.6735  
+## BCS4:logLength        -0.307842   0.568004  -0.542   0.5882  
+## BCS2.5:logGirth        0.019259   0.380401   0.051   0.9596  
+## BCS3:logGirth         -0.367853   0.364046  -1.010   0.3129  
+## BCS3.5:logGirth       -0.523429   0.461301  -1.135   0.2572  
+## BCS4:logGirth         -0.383558   0.855468  -0.448   0.6541  
+## BCS2.5:logHeight       0.057953   0.490580   0.118   0.9060  
+## BCS3:logHeight         0.213612   0.493986   0.432   0.6657  
+## BCS3.5:logHeight       0.516256   0.608305   0.849   0.3966  
+## BCS4:logHeight        -0.543963   1.008397  -0.539   0.5899  
+## Age2-5:Sexgelding     -0.006660   0.071023  -0.094   0.9253  
+## Age&gt;5:Sexgelding             NA         NA      NA       NA  
+## Age2-5:Sexfemale      -0.011102   0.026097  -0.425   0.6708  
+## Age&gt;5:Sexfemale        0.021968   0.028432   0.773   0.4402  
+## Age2-5:logLength      -0.369275   0.274656  -1.345   0.1796  
+## Age&gt;5:logLength       -0.130659   0.288264  -0.453   0.6506  
+## Age2-5:logGirth        0.251122   0.315282   0.796   0.4262  
+## Age&gt;5:logGirth         0.283464   0.337332   0.840   0.4013  
+## Age2-5:logHeight      -0.540351   0.453998  -1.190   0.2347  
+## Age&gt;5:logHeight       -0.839141   0.475789  -1.764   0.0786 .
+## Sexgelding:logLength  -0.118693   0.164634  -0.721   0.4714  
+## Sexfemale:logLength    0.032392   0.118562   0.273   0.7848  
+## Sexgelding:logGirth    0.409743   0.306873   1.335   0.1826  
+## Sexfemale:logGirth    -0.029599   0.185522  -0.160   0.8733  
+## Sexgelding:logHeight  -0.564820   0.331988  -1.701   0.0897 .
+## Sexfemale:logHeight   -0.323140   0.222631  -1.451   0.1475  
+## logLength:logGirth    -2.851129   1.426787  -1.998   0.0464 *
+## logLength:logHeight    3.146254   1.770769   1.777   0.0764 .
+## logGirth:logHeight     1.709327   2.298319   0.744   0.4575  
+## ---
+## Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1
+## 
+## Residual standard error: 0.05134 on 378 degrees of freedom
+## Multiple R-squared:  0.9349, Adjusted R-squared:  0.9256 
+## F-statistic: 100.5 on 54 and 378 DF,  p-value: &lt; 2.2e-16</code></pre>
+<pre class="r"><code>model.3rd = lm(logWeight~ .^3, data=train_binned_log)
+summary(model.2nd)</code></pre>
+<pre><code>## 
+## Call:
+## lm(formula = logWeight ~ .^2, data = train_binned_log)
+## 
+## Residuals:
+##       Min        1Q    Median        3Q       Max 
+## -0.147158 -0.028660 -0.001443  0.031591  0.135996 
+## 
+## Coefficients: (4 not defined because of singularities)
+##                        Estimate Std. Error t value Pr(&gt;|t|)  
+## (Intercept)           29.996442  35.687160   0.841   0.4011  
+## BCS2.5                 1.375864   2.042531   0.674   0.5010  
+## BCS3                   1.561776   2.030491   0.769   0.4423  
+## BCS3.5                 0.792406   2.606143   0.304   0.7613  
+## BCS4                   5.901846   4.141873   1.425   0.1550  
+## Age2-5                 2.887420   1.755011   1.645   0.1008  
+## Age&gt;5                  3.045727   2.005103   1.519   0.1296  
+## Sexgelding             1.251415   1.296567   0.965   0.3351  
+## Sexfemale              1.430162   0.882859   1.620   0.1061  
+## logLength              0.009310   7.533166   0.001   0.9990  
+## logGirth               6.475049  10.446280   0.620   0.5357  
+## logHeight            -21.162141  10.356602  -2.043   0.0417 *
+## BCS2.5:Age2-5          0.128302   0.052208   2.458   0.0144 *
+## BCS3:Age2-5            0.132585   0.056741   2.337   0.0200 *
+## BCS3.5:Age2-5          0.001806   0.043476   0.042   0.9669  
+## BCS4:Age2-5                  NA         NA      NA       NA  
+## BCS2.5:Age&gt;5           0.116338   0.060278   1.930   0.0544 .
+## BCS3:Age&gt;5             0.141453   0.063047   2.244   0.0254 *
+## BCS3.5:Age&gt;5                 NA         NA      NA       NA  
+## BCS4:Age&gt;5                   NA         NA      NA       NA  
+## BCS2.5:Sexgelding     -0.048661   0.044519  -1.093   0.2751  
+## BCS3:Sexgelding       -0.058127   0.043198  -1.346   0.1792  
+## BCS3.5:Sexgelding     -0.058371   0.050811  -1.149   0.2514  
+## BCS4:Sexgelding       -0.040203   0.064839  -0.620   0.5356  
+## BCS2.5:Sexfemale       0.034759   0.032224   1.079   0.2814  
+## BCS3:Sexfemale         0.034718   0.032130   1.081   0.2806  
+## BCS3.5:Sexfemale       0.064827   0.037042   1.750   0.0809 .
+## BCS4:Sexfemale        -0.019810   0.059397  -0.334   0.7389  
+## BCS2.5:logLength      -0.403981   0.261158  -1.547   0.1227  
+## BCS3:logLength        -0.195672   0.257721  -0.759   0.4482  
+## BCS3.5:logLength      -0.135188   0.320571  -0.422   0.6735  
+## BCS4:logLength        -0.307842   0.568004  -0.542   0.5882  
+## BCS2.5:logGirth        0.019259   0.380401   0.051   0.9596  
+## BCS3:logGirth         -0.367853   0.364046  -1.010   0.3129  
+## BCS3.5:logGirth       -0.523429   0.461301  -1.135   0.2572  
+## BCS4:logGirth         -0.383558   0.855468  -0.448   0.6541  
+## BCS2.5:logHeight       0.057953   0.490580   0.118   0.9060  
+## BCS3:logHeight         0.213612   0.493986   0.432   0.6657  
+## BCS3.5:logHeight       0.516256   0.608305   0.849   0.3966  
+## BCS4:logHeight        -0.543963   1.008397  -0.539   0.5899  
+## Age2-5:Sexgelding     -0.006660   0.071023  -0.094   0.9253  
+## Age&gt;5:Sexgelding             NA         NA      NA       NA  
+## Age2-5:Sexfemale      -0.011102   0.026097  -0.425   0.6708  
+## Age&gt;5:Sexfemale        0.021968   0.028432   0.773   0.4402  
+## Age2-5:logLength      -0.369275   0.274656  -1.345   0.1796  
+## Age&gt;5:logLength       -0.130659   0.288264  -0.453   0.6506  
+## Age2-5:logGirth        0.251122   0.315282   0.796   0.4262  
+## Age&gt;5:logGirth         0.283464   0.337332   0.840   0.4013  
+## Age2-5:logHeight      -0.540351   0.453998  -1.190   0.2347  
+## Age&gt;5:logHeight       -0.839141   0.475789  -1.764   0.0786 .
+## Sexgelding:logLength  -0.118693   0.164634  -0.721   0.4714  
+## Sexfemale:logLength    0.032392   0.118562   0.273   0.7848  
+## Sexgelding:logGirth    0.409743   0.306873   1.335   0.1826  
+## Sexfemale:logGirth    -0.029599   0.185522  -0.160   0.8733  
+## Sexgelding:logHeight  -0.564820   0.331988  -1.701   0.0897 .
+## Sexfemale:logHeight   -0.323140   0.222631  -1.451   0.1475  
+## logLength:logGirth    -2.851129   1.426787  -1.998   0.0464 *
+## logLength:logHeight    3.146254   1.770769   1.777   0.0764 .
+## logGirth:logHeight     1.709327   2.298319   0.744   0.4575  
+## ---
+## Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1
+## 
+## Residual standard error: 0.05134 on 378 degrees of freedom
+## Multiple R-squared:  0.9349, Adjusted R-squared:  0.9256 
+## F-statistic: 100.5 on 54 and 378 DF,  p-value: &lt; 2.2e-16</code></pre>
+<pre class="r"><code>stepwise = ols_step_both_aic(model.2nd)
+stepwise$model</code></pre>
+<pre><code>## NULL</code></pre>
+<pre class="r"><code>forward_2nd = ols_step_forward_aic(model.2nd)
+summary(forward_2nd$model)</code></pre>
+<pre><code>## 
+## Call:
+## lm(formula = paste(response, &quot;~&quot;, paste(preds, collapse = &quot; + &quot;)), 
+##     data = l)
+## 
+## Residuals:
+##       Min        1Q    Median        3Q       Max 
+## -0.138761 -0.033215 -0.000837  0.033256  0.139617 
+## 
+## Coefficients:
+##                     Estimate Std. Error t value Pr(&gt;|t|)    
+## (Intercept)         -11.3985    14.7979  -0.770 0.441568    
+## logHeight            -9.2489     5.1788  -1.786 0.074834 .  
+## Age&lt;2:logGirth       11.6450     2.9580   3.937 9.67e-05 ***
+## Age2-5:logGirth      12.0682     2.9742   4.058 5.91e-05 ***
+## Age&gt;5:logGirth       11.8506     2.9609   4.002 7.41e-05 ***
+## BCS1.5/2:logLength    1.7942     3.2045   0.560 0.575841    
+## BCS2.5:logLength      1.7986     3.2045   0.561 0.574906    
+## BCS3:logLength        1.8063     3.2046   0.564 0.573289    
+## BCS3.5:logLength      1.8142     3.2046   0.566 0.571611    
+## BCS4:logLength        1.8206     3.2052   0.568 0.570315    
+## logGirth:logLength   -2.2900     0.6536  -3.503 0.000509 ***
+## Age2-5:logLength     -0.4322     0.1879  -2.300 0.021926 *  
+## Age&gt;5:logLength      -0.1986     0.1666  -1.192 0.233831    
+## logLength:logHeight   2.1427     1.1374   1.884 0.060286 .  
+## ---
+## Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1
+## 
+## Residual standard error: 0.05108 on 419 degrees of freedom
+## Multiple R-squared:  0.9286, Adjusted R-squared:  0.9263 
+## F-statistic:   419 on 13 and 419 DF,  p-value: &lt; 2.2e-16</code></pre>
+<pre class="r"><code>backward_2nd = ols_step_backward_aic(model.2nd)
+summary(backward_2nd$model)</code></pre>
+<pre><code>## 
+## Call:
+## lm(formula = paste(response, &quot;~&quot;, paste(preds, collapse = &quot; + &quot;)), 
+##     data = l)
+## 
+## Residuals:
+##       Min        1Q    Median        3Q       Max 
+## -0.137220 -0.034117 -0.000938  0.035588  0.129792 
+## 
+## Coefficients:
+##                    Estimate Std. Error t value Pr(&gt;|t|)    
+## (Intercept)         -1.8797     1.0053  -1.870 0.062194 .  
+## Age2-5               2.0791     1.1789   1.764 0.078522 .  
+## Age&gt;5                2.1060     1.0566   1.993 0.046893 *  
+## logHeight           -8.3681     2.8053  -2.983 0.003021 ** 
+## BCS1.5/2:logLength   8.4672     2.7618   3.066 0.002311 ** 
+## BCS2.5:logLength     8.4723     2.7615   3.068 0.002295 ** 
+## BCS3:logLength       8.4800     2.7616   3.071 0.002274 ** 
+## BCS3.5:logLength     8.4877     2.7618   3.073 0.002255 ** 
+## BCS4:logLength       8.4938     2.7619   3.075 0.002240 ** 
+## Age2-5:logHeight    -0.4446     0.2571  -1.729 0.084455 .  
+## Age&gt;5:logHeight     -0.4432     0.2304  -1.923 0.055120 .  
+## logLength:logGirth  -1.6628     0.5817  -2.859 0.004466 ** 
+## logHeight:logGirth   1.9532     0.5721   3.414 0.000703 ***
+## ---
+## Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1
+## 
+## Residual standard error: 0.05127 on 420 degrees of freedom
+## Multiple R-squared:  0.9279, Adjusted R-squared:  0.9258 
+## F-statistic: 450.1 on 12 and 420 DF,  p-value: &lt; 2.2e-16</code></pre>
+<pre class="r"><code>stepwise = ols_step_both_aic(model.3rd)
+stepwise$model</code></pre>
+<pre><code>## NULL</code></pre>
+<pre class="r"><code>forward_3rd = ols_step_forward_aic(model.3rd)
+summary(forward_3rd$model)</code></pre>
+<pre><code>## 
+## Call:
+## lm(formula = paste(response, &quot;~&quot;, paste(preds, collapse = &quot; + &quot;)), 
+##     data = l)
+## 
+## Residuals:
+##       Min        1Q    Median        3Q       Max 
+## -0.138656 -0.031874 -0.001438  0.033763  0.126015 
+## 
+## Coefficients: (3 not defined because of singularities)
+##                                Estimate Std. Error t value Pr(&gt;|t|)    
+## (Intercept)                  -23.536974   6.586044  -3.574 0.000393 ***
+## Age&lt;2:logGirth                 5.290368   1.448493   3.652 0.000293 ***
+## Age2-5:logGirth                5.592618   1.400415   3.994 7.70e-05 ***
+## Age&gt;5:logGirth                 5.429786   1.378937   3.938 9.64e-05 ***
+## BCS2.5:logGirth               -0.004260   0.005864  -0.727 0.467898    
+## BCS3:logGirth                  0.003129   0.005829   0.537 0.591689    
+## BCS3.5:logGirth                0.020331   0.003391   5.996 4.40e-09 ***
+## BCS4:logGirth                  0.026939   0.004580   5.882 8.32e-09 ***
+## BCS2.5:Age2-5:logGirth         0.014650   0.007410   1.977 0.048713 *  
+## BCS3:Age2-5:logGirth           0.012649   0.007282   1.737 0.083133 .  
+## BCS3.5:Age2-5:logGirth         0.003190   0.006735   0.474 0.636062    
+## BCS4:Age2-5:logGirth                 NA         NA      NA       NA    
+## BCS2.5:Age&gt;5:logGirth          0.009247   0.006614   1.398 0.162842    
+## BCS3:Age&gt;5:logGirth            0.009909   0.006466   1.532 0.126176    
+## BCS3.5:Age&gt;5:logGirth                NA         NA      NA       NA    
+## BCS4:Age&gt;5:logGirth                  NA         NA      NA       NA    
+## Age&lt;2:logLength:logHeight      1.067544   0.304741   3.503 0.000510 ***
+## Age2-5:logLength:logHeight     0.998029   0.314825   3.170 0.001636 ** 
+## Age&gt;5:logLength:logHeight      1.037078   0.318628   3.255 0.001227 ** 
+## logGirth:logLength:logHeight  -0.191173   0.066649  -2.868 0.004336 ** 
+## ---
+## Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1
+## 
+## Residual standard error: 0.0513 on 416 degrees of freedom
+## Multiple R-squared:  0.9285, Adjusted R-squared:  0.9257 
+## F-statistic: 337.4 on 16 and 416 DF,  p-value: &lt; 2.2e-16</code></pre>
+<pre class="r"><code>backward_3rd = ols_step_backward_aic(model.3rd)
+summary(backward_3rd$model)</code></pre>
+<pre><code>## 
+## Call:
+## lm(formula = paste(response, &quot;~&quot;, paste(preds, collapse = &quot; + &quot;)), 
+##     data = l)
+## 
+## Residuals:
+##      Min       1Q   Median       3Q      Max 
+## -0.13936 -0.03340 -0.00129  0.03401  0.13564 
+## 
+## Coefficients:
+##                             Estimate Std. Error t value Pr(&gt;|t|)    
+## (Intercept)                 43.13141   23.10076   1.867  0.06260 .  
+## BCS2.5                       0.02080    0.01130   1.841  0.06628 .  
+## BCS3                         0.05831    0.01124   5.188 3.34e-07 ***
+## BCS3.5                       0.09375    0.01376   6.812 3.42e-11 ***
+## BCS4                         0.11841    0.02041   5.801 1.31e-08 ***
+## logLength                   21.22610    9.15800   2.318  0.02095 *  
+## logHeight                  -40.50104   12.28230  -3.298  0.00106 ** 
+## logLength:Age2-5           -24.17835   11.54754  -2.094  0.03689 *  
+## logLength:Age&gt;5            -20.13388   11.53263  -1.746  0.08159 .  
+## logHeight:Age2-5            24.25609   11.28652   2.149  0.03221 *  
+## logHeight:Age&gt;5             20.43979   11.32626   1.805  0.07186 .  
+## logLength:logGirth          -6.64329    2.11539  -3.140  0.00181 ** 
+## logLength:Age2-5:logGirth    5.39411    2.49396   2.163  0.03112 *  
+## logLength:Age&gt;5:logGirth     4.56347    2.48597   1.836  0.06712 .  
+## logLength:logHeight:Age&lt;2    2.24708    1.14375   1.965  0.05012 .  
+## logLength:logHeight:Age2-5   2.01494    1.11076   1.814  0.07040 .  
+## logLength:logHeight:Age&gt;5    2.03771    1.09063   1.868  0.06242 .  
+## logHeight:Age&lt;2:logGirth     6.77295    2.05505   3.296  0.00107 ** 
+## logHeight:Age2-5:logGirth    1.59177    1.45969   1.090  0.27614    
+## logHeight:Age&gt;5:logGirth     2.35432    1.41009   1.670  0.09575 .  
+## ---
+## Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1
+## 
+## Residual standard error: 0.05101 on 413 degrees of freedom
+## Multiple R-squared:  0.9298, Adjusted R-squared:  0.9265 
+## F-statistic: 287.8 on 19 and 413 DF,  p-value: &lt; 2.2e-16</code></pre>
+<pre class="r"><code>model_specific_2nd = lm( log(Weight) ~ Age + Sex + BCS + log(Length) + log(Height) + log(Girth) + log(Length) ^ 2 + log(Height)^2 + log(Girth)^2, data=train_binned)
+summary(model_specific_2nd)</code></pre>
+<pre><code>## 
+## Call:
+## lm(formula = log(Weight) ~ Age + Sex + BCS + log(Length) + log(Height) + 
+##     log(Girth) + log(Length)^2 + log(Height)^2 + log(Girth)^2, 
+##     data = train_binned)
+## 
+## Residuals:
+##       Min        1Q    Median        3Q       Max 
+## -0.143693 -0.034886 -0.002716  0.037449  0.139096 
+## 
+## Coefficients:
+##              Estimate Std. Error t value Pr(&gt;|t|)    
+## (Intercept) -7.425812   0.362169 -20.504  &lt; 2e-16 ***
+## Age2-5       0.051548   0.011481   4.490 9.22e-06 ***
+## Age&gt;5        0.082292   0.012281   6.701 6.67e-11 ***
+## Sexgelding  -0.007761   0.007782  -0.997   0.3192    
+## Sexfemale   -0.005276   0.005638  -0.936   0.3500    
+## BCS2.5       0.026718   0.011409   2.342   0.0197 *  
+## BCS3         0.058558   0.011322   5.172 3.59e-07 ***
+## BCS3.5       0.090236   0.013893   6.495 2.35e-10 ***
+## BCS4         0.115516   0.020298   5.691 2.37e-08 ***
+## log(Length)  0.612659   0.050183  12.208  &lt; 2e-16 ***
+## log(Height)  0.508529   0.095801   5.308 1.80e-07 ***
+## log(Girth)   1.510591   0.080467  18.773  &lt; 2e-16 ***
+## ---
+## Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1
+## 
+## Residual standard error: 0.05213 on 421 degrees of freedom
+## Multiple R-squared:  0.9252, Adjusted R-squared:  0.9233 
+## F-statistic: 473.7 on 11 and 421 DF,  p-value: &lt; 2.2e-16</code></pre>
+<pre class="r"><code>forward_specific_2nd = ols_step_forward_aic(model_specific_2nd)
+summary(forward_specific_2nd$model)</code></pre>
+<pre><code>## 
+## Call:
+## lm(formula = paste(response, &quot;~&quot;, paste(preds, collapse = &quot; + &quot;)), 
+##     data = l)
+## 
+## Residuals:
+##       Min        1Q    Median        3Q       Max 
+## -0.142302 -0.035275 -0.002376  0.036321  0.137105 
+## 
+## Coefficients:
+##             Estimate Std. Error t value Pr(&gt;|t|)    
+## (Intercept) -7.39971    0.35855 -20.638  &lt; 2e-16 ***
+## log(Girth)   1.49927    0.07978  18.793  &lt; 2e-16 ***
+## log(Length)  0.61005    0.04956  12.310  &lt; 2e-16 ***
+## BCS2.5       0.02610    0.01136   2.297   0.0221 *  
+## BCS3         0.05823    0.01131   5.150 4.01e-07 ***
+## BCS3.5       0.08973    0.01388   6.466 2.78e-10 ***
+## BCS4         0.11526    0.02027   5.686 2.42e-08 ***
+## Age2-5       0.05309    0.01139   4.662 4.20e-06 ***
+## Age&gt;5        0.08302    0.01216   6.825 3.05e-11 ***
+## log(Height)  0.51625    0.09354   5.519 5.96e-08 ***
+## ---
+## Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1
+## 
+## Residual standard error: 0.05209 on 423 degrees of freedom
+## Multiple R-squared:  0.925,  Adjusted R-squared:  0.9234 
+## F-statistic: 579.7 on 9 and 423 DF,  p-value: &lt; 2.2e-16</code></pre>
+<pre class="r"><code>backward_specific_2nd = ols_step_backward_aic(model_specific_2nd)
+summary(backward_specific_2nd$model)</code></pre>
+<pre><code>## 
+## Call:
+## lm(formula = paste(response, &quot;~&quot;, paste(preds, collapse = &quot; + &quot;)), 
+##     data = l)
+## 
+## Residuals:
+##       Min        1Q    Median        3Q       Max 
+## -0.142302 -0.035275 -0.002376  0.036321  0.137105 
+## 
+## Coefficients:
+##             Estimate Std. Error t value Pr(&gt;|t|)    
+## (Intercept) -7.39971    0.35855 -20.638  &lt; 2e-16 ***
+## Age2-5       0.05309    0.01139   4.662 4.20e-06 ***
+## Age&gt;5        0.08302    0.01216   6.825 3.05e-11 ***
+## BCS2.5       0.02610    0.01136   2.297   0.0221 *  
+## BCS3         0.05823    0.01131   5.150 4.01e-07 ***
+## BCS3.5       0.08973    0.01388   6.466 2.78e-10 ***
+## BCS4         0.11526    0.02027   5.686 2.42e-08 ***
+## log(Length)  0.61005    0.04956  12.310  &lt; 2e-16 ***
+## log(Height)  0.51625    0.09354   5.519 5.96e-08 ***
+## log(Girth)   1.49927    0.07978  18.793  &lt; 2e-16 ***
+## ---
+## Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1
+## 
+## Residual standard error: 0.05209 on 423 degrees of freedom
+## Multiple R-squared:  0.925,  Adjusted R-squared:  0.9234 
+## F-statistic: 579.7 on 9 and 423 DF,  p-value: &lt; 2.2e-16</code></pre>
+<pre class="r"><code>model_specific_3rd = lm(log(Weight) ~ Age + Sex + BCS + log(Length) + log(Height) + log(Girth) + log(Length) ^ 2 + log(Height)^2 + log(Girth)^2 + log(Length)^2 * log(Height) + log(Length)^2 * log(Girth) + log(Height)^2 * log(Girth) + log(Height)^2 * log(Length), log(Girth)^2*log(Length) + log(Girth)^2 * log(Height) + log(Girth)^3 + log(Height)^3 
+                        # + log(Length)^3
+                        , data=train_binned)
+summary(model_specific_3rd)</code></pre>
+<pre><code>## 
+## Call:
+## lm(formula = log(Weight) ~ Age + Sex + BCS + log(Length) + log(Height) + 
+##     log(Girth) + log(Length)^2 + log(Height)^2 + log(Girth)^2 + 
+##     log(Length)^2 * log(Height) + log(Length)^2 * log(Girth) + 
+##     log(Height)^2 * log(Girth) + log(Height)^2 * log(Length), 
+##     data = train_binned, subset = log(Girth)^2 * log(Length) + 
+##         log(Girth)^2 * log(Height) + log(Girth)^3 + log(Height)^3)
+## 
+## Residuals:
+##       Min        1Q    Median        3Q       Max 
+## -0.089414 -0.011980  0.001316  0.014570  0.069310 
+## 
+## Coefficients:
+##                           Estimate Std. Error t value Pr(&gt;|t|)    
+## (Intercept)             251.840474  38.020912   6.624 1.12e-10 ***
+## Age&gt;5                     0.010876   0.005111   2.128 0.033942 *  
+## Sexgelding               -0.008317   0.003212  -2.589 0.009966 ** 
+## Sexfemale                -0.007922   0.003254  -2.434 0.015354 *  
+## BCS3                      0.004149   0.005907   0.702 0.482821    
+## BCS3.5                    0.032083   0.005982   5.363 1.38e-07 ***
+## BCS4                      0.042698   0.006609   6.460 3.00e-10 ***
+## log(Length)             -25.882648   7.396428  -3.499 0.000518 ***
+## log(Height)             -23.724800   7.350239  -3.228 0.001349 ** 
+## log(Girth)              -55.528334  10.067320  -5.516 6.20e-08 ***
+## log(Length):log(Height)  -0.837013   1.391351  -0.602 0.547788    
+## log(Length):log(Girth)    6.226898   1.384863   4.496 9.04e-06 ***
+## log(Height):log(Girth)    5.810724   1.662344   3.496 0.000525 ***
+## ---
+## Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1
+## 
+## Residual standard error: 0.02186 on 405 degrees of freedom
+##   (15 observations deleted due to missingness)
+## Multiple R-squared:  0.6896, Adjusted R-squared:  0.6804 
+## F-statistic: 74.98 on 12 and 405 DF,  p-value: &lt; 2.2e-16</code></pre>
+<pre class="r"><code>forward_specific_3rd = ols_step_forward_aic(model_specific_3rd)
+summary(forward_specific_3rd$model)</code></pre>
+<pre><code>## 
+## Call:
+## lm(formula = paste(response, &quot;~&quot;, paste(preds, collapse = &quot; + &quot;)), 
+##     data = l)
+## 
+## Residuals:
+##       Min        1Q    Median        3Q       Max 
+## -0.136824 -0.033352 -0.000107  0.036592  0.125997 
+## 
+## Coefficients:
+##                          Estimate Std. Error t value Pr(&gt;|t|)    
+## (Intercept)              -4.39172    0.40476 -10.850  &lt; 2e-16 ***
+## log(Girth)               11.76260    2.75084   4.276 2.36e-05 ***
+## BCS2.5                    0.02170    0.01127   1.926 0.054837 .  
+## BCS3                      0.05530    0.01118   4.947 1.09e-06 ***
+## BCS3.5                    0.09125    0.01369   6.665 8.31e-11 ***
+## BCS4                      0.12050    0.02005   6.009 4.04e-09 ***
+## Age2-5                    0.04349    0.01156   3.761 0.000193 ***
+## Age&gt;5                     0.07491    0.01222   6.132 2.00e-09 ***
+## log(Height)             -10.67812    2.84125  -3.758 0.000195 ***
+## log(Length):log(Girth)   -2.26736    0.60762  -3.732 0.000216 ***
+## log(Length):log(Height)   2.46190    0.62444   3.943 9.44e-05 ***
+## ---
+## Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1
+## 
+## Residual standard error: 0.05137 on 422 degrees of freedom
+## Multiple R-squared:  0.9272, Adjusted R-squared:  0.9255 
+## F-statistic: 537.8 on 10 and 422 DF,  p-value: &lt; 2.2e-16</code></pre>
+<pre class="r"><code>backward_specific_3rd = ols_step_backward_aic(model_specific_3rd)
+summary(backward_specific_3rd$model)</code></pre>
+<pre><code>## 
+## Call:
+## lm(formula = paste(response, &quot;~&quot;, paste(preds, collapse = &quot; + &quot;)), 
+##     data = l)
+## 
+## Residuals:
+##       Min        1Q    Median        3Q       Max 
+## -0.135062 -0.034117 -0.001183  0.035380  0.127186 
+## 
+## Coefficients:
+##                           Estimate Std. Error t value Pr(&gt;|t|)    
+## (Intercept)             -15.074880  18.106399  -0.833  0.40556    
+## Age2-5                    0.039019   0.012062   3.235  0.00131 ** 
+## Age&gt;5                     0.071538   0.012661   5.651 2.96e-08 ***
+## Sexgelding               -0.008034   0.007712  -1.042  0.29813    
+## Sexfemale                -0.006346   0.005608  -1.132  0.25848    
+## BCS2.5                    0.022327   0.011327   1.971  0.04937 *  
+## BCS3                      0.055904   0.011210   4.987 9.01e-07 ***
+## BCS3.5                    0.092209   0.013736   6.713 6.24e-11 ***
+## BCS4                      0.122773   0.020459   6.001 4.26e-09 ***
+## log(Length)               4.113305   5.459509   0.753  0.45162    
+## log(Height)              -7.720763   6.145618  -1.256  0.20971    
+## log(Girth)                9.453738   6.442167   1.467  0.14300    
+## log(Length):log(Height)   1.427368   1.343829   1.062  0.28877    
+## log(Length):log(Girth)   -2.128173   0.689439  -3.087  0.00216 ** 
+## log(Height):log(Girth)    0.365354   1.451666   0.252  0.80141    
+## ---
+## Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1
+## 
+## Residual standard error: 0.05144 on 418 degrees of freedom
+## Multiple R-squared:  0.9277, Adjusted R-squared:  0.9253 
+## F-statistic: 383.3 on 14 and 418 DF,  p-value: &lt; 2.2e-16</code></pre>
+<pre class="r"><code>results &lt;- function(predicted, actual){
+  residuals = predicted - actual
+  relative_error = predicted/actual
+  MSE = mean(residuals^2)
+  cat(&quot;The MSE is&quot;, MSE,&#39;\n&#39;)
+  cat(&quot;The Mean Relative Squared Error is&quot;,mean((relative_error-1)^2),&#39;\n\n&#39;)
+}
+
+test_binned_log = subset(test_binned, select = -c(WeightAlt))
+test_binned_log$Length = log(test_binned_log$Length)
+test_binned_log$Weight = log(test_binned_log$Weight)
+test_binned_log$Height = log(test_binned_log$Height)
+test_binned_log$Girth = log(test_binned_log$Girth)
+
+
+names(test_binned_log)[names(test_binned_log) == &quot;Length&quot;] &lt;- &quot;logLength&quot;
+names(test_binned_log)[names(test_binned_log) == &quot;Weight&quot;] &lt;- &quot;logWeight&quot;
+names(test_binned_log)[names(test_binned_log) == &quot;Height&quot;] &lt;- &quot;logHeight&quot;
+names(test_binned_log)[names(test_binned_log) == &quot;Girth&quot;] &lt;- &quot;logGirth&quot;
+
+print(&quot;squared interaction, forward selected model&quot;)</code></pre>
+<pre><code>## [1] &quot;squared interaction, forward selected model&quot;</code></pre>
+<pre class="r"><code>predictions = predict.lm(forward_2nd$model, test_binned_log, interval=&quot;confidence&quot;)
+our_predicted = exp(predictions[,1])
+results(our_predicted,exp(test_binned_log$logWeight))</code></pre>
+<pre><code>## The MSE is 85.84901 
+## The Mean Relative Squared Error is 0.004196787</code></pre>
+<pre class="r"><code>print(&quot;squared interaction, backward selected model&quot;)</code></pre>
+<pre><code>## [1] &quot;squared interaction, backward selected model&quot;</code></pre>
+<pre class="r"><code>predictions = predict.lm(backward_2nd$model, test_binned_log, interval=&quot;confidence&quot;)
+our_predicted = exp(predictions[,1])
+results(our_predicted,exp(test_binned_log$logWeight))</code></pre>
+<pre><code>## The MSE is 84.95202 
+## The Mean Relative Squared Error is 0.003949069</code></pre>
+<pre class="r"><code>print(&quot;cubed interaction, forward selected model&quot;)</code></pre>
+<pre><code>## [1] &quot;cubed interaction, forward selected model&quot;</code></pre>
+<pre class="r"><code>predictions = predict.lm(forward_3rd$model, test_binned_log, interval=&quot;confidence&quot;)</code></pre>
+<pre><code>## Warning in predict.lm(forward_3rd$model, test_binned_log, interval =
+## &quot;confidence&quot;): prediction from a rank-deficient fit may be misleading</code></pre>
+<pre class="r"><code>our_predicted = exp(predictions[,1])
+results(our_predicted,exp(test_binned_log$logWeight))</code></pre>
+<pre><code>## The MSE is 85.02834 
+## The Mean Relative Squared Error is 0.0040116</code></pre>
+<pre class="r"><code>print(&quot;cubed interaction, backward selected model&quot;)</code></pre>
+<pre><code>## [1] &quot;cubed interaction, backward selected model&quot;</code></pre>
+<pre class="r"><code>predictions = predict.lm(backward_3rd$model, test_binned_log, interval=&quot;confidence&quot;)
+our_predicted = exp(predictions[,1])
+results(our_predicted,exp(test_binned_log$logWeight))</code></pre>
+<pre><code>## The MSE is 87.64883 
+## The Mean Relative Squared Error is 0.00432451</code></pre>
+<pre class="r"><code>print(&quot;squared specific interaction, forward selected model&quot;)</code></pre>
+<pre><code>## [1] &quot;squared specific interaction, forward selected model&quot;</code></pre>
+<pre class="r"><code>predictions = predict.lm(forward_specific_2nd$model, test_binned, interval=&quot;confidence&quot;)
+our_predicted = exp(predictions[,1])
+results(our_predicted,test_binned$Weight)</code></pre>
+<pre><code>## The MSE is 85.67837 
+## The Mean Relative Squared Error is 0.003974487</code></pre>
+<pre class="r"><code>print(&quot;squared specific interaction, backward selected model&quot;)</code></pre>
+<pre><code>## [1] &quot;squared specific interaction, backward selected model&quot;</code></pre>
+<pre class="r"><code>predictions = predict.lm(backward_specific_2nd$model, test_binned, interval=&quot;confidence&quot;)
+our_predicted = exp(predictions[,1])
+results(our_predicted,test_binned$Weight)</code></pre>
+<pre><code>## The MSE is 85.67837 
+## The Mean Relative Squared Error is 0.003974487</code></pre>
+<pre class="r"><code>print(&quot;cubed specific interaction, forward selected model&quot;)</code></pre>
+<pre><code>## [1] &quot;cubed specific interaction, forward selected model&quot;</code></pre>
+<pre class="r"><code>predictions = predict.lm(forward_specific_3rd$model, test_binned, interval=&quot;confidence&quot;)
+our_predicted = exp(predictions[,1])
+results(our_predicted,test_binned$Weight)</code></pre>
+<pre><code>## The MSE is 83.99746 
+## The Mean Relative Squared Error is 0.004011923</code></pre>
+<pre class="r"><code>print(&quot;cubed specific interaction, backward selected model&quot;)</code></pre>
+<pre><code>## [1] &quot;cubed specific interaction, backward selected model&quot;</code></pre>
+<pre class="r"><code>predictions = predict.lm(backward_specific_3rd$model, test_binned, interval=&quot;confidence&quot;)
+our_predicted = exp(predictions[,1])
+results(our_predicted,test_binned$Weight)</code></pre>
+<pre><code>## The MSE is 84.26179 
+## The Mean Relative Squared Error is 0.00394733</code></pre>
+<ul>
+<li>it looks like squared interaction effects, backward selected model performed the best</li>
+</ul>
+<pre class="r"><code>summary(backward_2nd$model)</code></pre>
+<pre><code>## 
+## Call:
+## lm(formula = paste(response, &quot;~&quot;, paste(preds, collapse = &quot; + &quot;)), 
+##     data = l)
+## 
+## Residuals:
+##       Min        1Q    Median        3Q       Max 
+## -0.137220 -0.034117 -0.000938  0.035588  0.129792 
+## 
+## Coefficients:
+##                    Estimate Std. Error t value Pr(&gt;|t|)    
+## (Intercept)         -1.8797     1.0053  -1.870 0.062194 .  
+## Age2-5               2.0791     1.1789   1.764 0.078522 .  
+## Age&gt;5                2.1060     1.0566   1.993 0.046893 *  
+## logHeight           -8.3681     2.8053  -2.983 0.003021 ** 
+## BCS1.5/2:logLength   8.4672     2.7618   3.066 0.002311 ** 
+## BCS2.5:logLength     8.4723     2.7615   3.068 0.002295 ** 
+## BCS3:logLength       8.4800     2.7616   3.071 0.002274 ** 
+## BCS3.5:logLength     8.4877     2.7618   3.073 0.002255 ** 
+## BCS4:logLength       8.4938     2.7619   3.075 0.002240 ** 
+## Age2-5:logHeight    -0.4446     0.2571  -1.729 0.084455 .  
+## Age&gt;5:logHeight     -0.4432     0.2304  -1.923 0.055120 .  
+## logLength:logGirth  -1.6628     0.5817  -2.859 0.004466 ** 
+## logHeight:logGirth   1.9532     0.5721   3.414 0.000703 ***
+## ---
+## Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1
+## 
+## Residual standard error: 0.05127 on 420 degrees of freedom
+## Multiple R-squared:  0.9279, Adjusted R-squared:  0.9258 
+## F-statistic: 450.1 on 12 and 420 DF,  p-value: &lt; 2.2e-16</code></pre>
+</div>
 <div id="model-selection" class="section level1">
 <h1>Model Selection</h1>
 <pre class="r"><code>stepwise = ols_step_both_aic(model.prop)
@@ -732,29 +1355,63 @@ stepwise</code></pre>
 ## log(Height)    addition    -1318.152    1.148    14.157    0.92500      0.92341 
 ## -------------------------------------------------------------------------------</code></pre>
 <pre class="r"><code>forward = ols_step_forward_aic(model.prop)
-forward</code></pre>
+summary(forward$model)</code></pre>
 <pre><code>## 
-##                          Selection Summary                          
-## -------------------------------------------------------------------
-## Variable          AIC       Sum Sq     RSS      R-Sq      Adj. R-Sq 
-## -------------------------------------------------------------------
-## log(Girth)     -1058.630    13.136    2.169    0.85830      0.85797 
-## log(Length)    -1223.571    13.829    1.475    0.90363      0.90318 
-## BCS            -1252.965    13.951    1.353    0.91160      0.91036 
-## Age            -1290.044    14.074    1.230    0.91960      0.91809 
-## log(Height)    -1318.152    14.157    1.148    0.92500      0.92341 
-## -------------------------------------------------------------------</code></pre>
-<pre class="r"><code>backward = ols_step_backward_aic(model.prop)
-backward</code></pre>
-<pre><code>## 
+## Call:
+## lm(formula = paste(response, &quot;~&quot;, paste(preds, collapse = &quot; + &quot;)), 
+##     data = l)
 ## 
-##                     Backward Elimination Summary                    
-## ------------------------------------------------------------------
-## Variable         AIC        RSS     Sum Sq     R-Sq      Adj. R-Sq 
-## ------------------------------------------------------------------
-## Full Model    -1315.568    1.144    14.160    0.92525      0.92330 
-## Sex           -1318.152    1.148    14.157    0.92500      0.92341 
-## ------------------------------------------------------------------</code></pre>
+## Residuals:
+##       Min        1Q    Median        3Q       Max 
+## -0.142302 -0.035275 -0.002376  0.036321  0.137105 
+## 
+## Coefficients:
+##             Estimate Std. Error t value Pr(&gt;|t|)    
+## (Intercept) -7.39971    0.35855 -20.638  &lt; 2e-16 ***
+## log(Girth)   1.49927    0.07978  18.793  &lt; 2e-16 ***
+## log(Length)  0.61005    0.04956  12.310  &lt; 2e-16 ***
+## BCS2.5       0.02610    0.01136   2.297   0.0221 *  
+## BCS3         0.05823    0.01131   5.150 4.01e-07 ***
+## BCS3.5       0.08973    0.01388   6.466 2.78e-10 ***
+## BCS4         0.11526    0.02027   5.686 2.42e-08 ***
+## Age2-5       0.05309    0.01139   4.662 4.20e-06 ***
+## Age&gt;5        0.08302    0.01216   6.825 3.05e-11 ***
+## log(Height)  0.51625    0.09354   5.519 5.96e-08 ***
+## ---
+## Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1
+## 
+## Residual standard error: 0.05209 on 423 degrees of freedom
+## Multiple R-squared:  0.925,  Adjusted R-squared:  0.9234 
+## F-statistic: 579.7 on 9 and 423 DF,  p-value: &lt; 2.2e-16</code></pre>
+<pre class="r"><code>backward = ols_step_backward_aic(model.prop)
+summary(backward$model)</code></pre>
+<pre><code>## 
+## Call:
+## lm(formula = paste(response, &quot;~&quot;, paste(preds, collapse = &quot; + &quot;)), 
+##     data = l)
+## 
+## Residuals:
+##       Min        1Q    Median        3Q       Max 
+## -0.142302 -0.035275 -0.002376  0.036321  0.137105 
+## 
+## Coefficients:
+##             Estimate Std. Error t value Pr(&gt;|t|)    
+## (Intercept) -7.39971    0.35855 -20.638  &lt; 2e-16 ***
+## BCS2.5       0.02610    0.01136   2.297   0.0221 *  
+## BCS3         0.05823    0.01131   5.150 4.01e-07 ***
+## BCS3.5       0.08973    0.01388   6.466 2.78e-10 ***
+## BCS4         0.11526    0.02027   5.686 2.42e-08 ***
+## Age2-5       0.05309    0.01139   4.662 4.20e-06 ***
+## Age&gt;5        0.08302    0.01216   6.825 3.05e-11 ***
+## log(Length)  0.61005    0.04956  12.310  &lt; 2e-16 ***
+## log(Girth)   1.49927    0.07978  18.793  &lt; 2e-16 ***
+## log(Height)  0.51625    0.09354   5.519 5.96e-08 ***
+## ---
+## Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1
+## 
+## Residual standard error: 0.05209 on 423 degrees of freedom
+## Multiple R-squared:  0.925,  Adjusted R-squared:  0.9234 
+## F-statistic: 579.7 on 9 and 423 DF,  p-value: &lt; 2.2e-16</code></pre>
 <ul>
 <li>We see that indeed, sex is irrelevant. However, unlike the original paper, Height seems to be relevant.</li>
 </ul>
@@ -986,7 +1643,19 @@ asymmetric_loss &lt;- function(predicted, actual, alpha){
   }
   cat(&quot;The Asymmetric Loss is&quot;,mean((relative_error)^2),&quot;\n&quot;)
 }</code></pre>
-<pre class="r"><code>#Plot Asymmetric Loss</code></pre>
+<pre class="r"><code># Generic Assymetric Loss
+assym_func &lt;- function(x, alpha){
+  if(x &lt; 0){
+    return(alpha^2*x^2)
+  }
+  return(x^2)
+}
+
+x &lt;- seq(-0.4,0.4,0.001)
+Loss &lt;- lapply(x, assym_func, 2.14)
+
+plot(x,Loss, xlab = &quot;Relative Error, Actual/Predicted&quot;, main = &quot;Assymetric Loss Function&quot;)</code></pre>
+<p><img src="data:image/png;base64,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" width="672" /></p>
 <pre class="r"><code>#Compare asymmetric loss on relative error
 asymmetric_loss(author_predicted,test$Weight,alpha)</code></pre>
 <pre><code>## The Asymmetric Loss is 0.01196176</code></pre>
