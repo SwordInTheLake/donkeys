@@ -1,7 +1,7 @@
 ---
 title: "Donkeys Code"
 author: "Eric Tay, Daniel Zhou, Sherry Hu, Jason McEachin"
-date: "5/21/2020"
+date: "5/26/2020"
 output: html_document
 ---
 
@@ -49,9 +49,6 @@ donkeys$Age[donkeys$Age == ">20"] <- ">5"
 donkeys_binned <- donkeys
 donkeys_binned$BCS[donkeys_binned$BCS == "1.5"] <- "2"
 donkeys_binned$BCS <- revalue(donkeys_binned$BCS, c("2"="1.5/2"))
-#levels(donkeys_binned$BCS) <- c(levels(donkeys_binned$BCS),"1.5/2")
-#donkeys_binned$BCS[donkeys_binned$BCS == "1.5"] <- "1.5/2"
-#donkeys_binned$BCS[donkeys_binned$BCS == "2"] <- "1.5/2"
 
 # train-test split, take every 5th donkey for test set, as per Milner and Rouge
 # train/test does not have BCS = 1.5/2 binned together, while train_binned/test_binned does
@@ -159,6 +156,7 @@ plot_predictions <- function(predicted){
 
 ```{r}
 # We reproduce their graph 
+options(warn=-1)
 plot_predictions(author_predicted)
 ```
 
@@ -186,7 +184,7 @@ prop.table(table(donkeys$Age)[-c(3,4,5,6)])*100
 
 * Less than 1 % of donkeys have BCS 1.5. 
 * This might give us motivation to bin BCS = 1.5 with BCS = 2. 
-* Proportions for Age do not motivate any binning like the Miler and Rougier.
+* We might also want to bin BCS = 4 with BCS = 3.5.
 
 ```{r}
 pairs(Weight~Length + Girth + Height, data = train)
@@ -288,6 +286,12 @@ results <- function(predicted, actual){
 results(our_predicted,test_binned$Weight)
 ```
 
+```{r}
+sqrt(85.67837)
+sqrt(0.003974487)
+```
+
+
 # Test for Interactions
 
 ```{r}
@@ -301,6 +305,7 @@ names(donkeys_binned_log)[names(donkeys_binned_log) == "Length"] <- "logLength"
 names(donkeys_binned_log)[names(donkeys_binned_log) == "Weight"] <- "logWeight"
 names(donkeys_binned_log)[names(donkeys_binned_log) == "Height"] <- "logHeight"
 names(donkeys_binned_log)[names(donkeys_binned_log) == "Girth"] <- "logGirth"
+# We note that this data still includes Sex information
 ```
 
 ```{r}
@@ -318,23 +323,28 @@ for(i in 1:nrow(donkeys)){
 ```
 
 ```{r}
-model.2nd = lm(logWeight~ .^2, data=train_binned_log)
+# 2-way interactions
+model.2nd = lm(logWeight~ .^2, data=train_binned_log) 
+# 3-way interactions
 model.3rd = lm(logWeight~ .^3, data=train_binned_log)
 
+# Adding up to 2nd order polynomial terms
 model_poly_2nd = lm( logWeight ~ Age + Sex + BCS + logLength + logHeight + logGirth + logLength*logHeight + logHeight*logGirth + logLength*logHeight + I(logLength ^ 2) + I(logHeight^2) + I(logGirth^2), data=train_binned_log)
 
+# Adding up to 3rd order polynomial terms
 model_poly_3rd = lm(logWeight ~ Age + Sex + BCS + logLength + logHeight + logGirth + logLength*logHeight + logHeight*logGirth + logLength*logHeight + I(logLength^2) + I(logHeight^2) + I(logGirth^2) + I(logLength^2*logHeight) + I(logLength^2*logGirth) + I(logHeight^2*logLength) + I(logHeight^2*logGirth) + I(logGirth^2*logLength) + I(logGirth^2*logHeight) + I(logLength^3) + I(logHeight^3) + I(logGirth^3), data=train_binned_log)
 ```
 
 ```{r warning=FALSE}
+# Conduct backward selection
 backward_2nd = ols_step_backward_aic(model.2nd)
 backward_3rd = ols_step_backward_aic(model.3rd)
-
 backward_poly_2nd = ols_step_backward_aic(model_poly_2nd)
 backward_poly_3rd = ols_step_backward_aic(model_poly_3rd)
 ```
 
 ```{r}
+# See variables selected
 names(backward_2nd$model$coefficients) 
 names(backward_3rd$model$coefficients) 
 names(backward_poly_2nd$model$coefficients) 
@@ -376,7 +386,7 @@ for(i in 1:5){
   #create a new model on train_fold
   our_model = lm(logWeight ~ BCS + Age + logLength + logGirth + logHeight, data=train_fold)
   backward_2nd = lm(logWeight ~ Age + logHeight +BCS*logLength + Age*logHeight + logLength*logGirth + logHeight*logGirth, data=train_fold)
-  backward_3rd = lm(logWeight ~ BCS + logLength + logHeight + logLength*Age + logLength*logGirth + logLength*Age*logGirth + logLength*logHeight*Age + logHeight*logGirth*Age, data=train_fold)
+  backward_3rd = lm(logWeight ~ BCS + logLength + logHeight + logLength*Age + logHeight*Age + logLength*logGirth + logLength*Age*logGirth + logLength*logHeight*Age + logHeight*logGirth*Age, data=train_fold)
   backward_poly_2nd = lm(logWeight ~ Age + BCS + logLength + logHeight + logGirth + I(logLength^2) + I(logHeight^2) + I(logGirth^2), data=train_fold)
   backward_poly_3rd = lm(logWeight ~ BCS + Age + logLength + logHeight*logGirth + I(logHeight^2) + I(logGirth^2) + I(logLength^2 * logGirth) + I(logHeight^2 * logGirth) + I(logGirth^2 * logLength) + I(logGirth^2 * logHeight) + I(logHeight^3) + I(logLength^3), data=train_fold)
   
@@ -425,7 +435,7 @@ model_poly_2nd = lm(log(Weight) ~ BCS + Age + log(Length) + log(Girth) + log(Hei
 summary(model_poly_2nd)
 ```
 
-* We see that the beta values associated with log(Length) and log(Girth) are around 7 and 12, which is also hard to understand. 
+* We see that the beta values associated with log(Length) and log(Girth) are around 7 and 12, which is also hard to understand biologically.
 * We hence continue with our original model. 
 
 ```{r}
@@ -447,11 +457,15 @@ plot_hist_residuals(our_predicted, test$Weight, 16)
 plot_hist_residuals(author_predicted, test$Weight, 16)
 ```
 
+* Looking at the absolute difference of actual and predicted weight, our model has slightly smaller under-predictions and slightly larger over-predictions. This is expected because our model uses a symmetric loss function. But it might be concerning.
+
 ```{r}
 #Compare distributions of relative errors
 plot_hist(author_predicted, test$Weight)
 plot_hist(our_predicted, test_binned$Weight)
 ```
+
+* However, error as in Milner and Rougier is defined on a relative error. Doing so, we see that our model seems to over-predict the same and have fewer under-predictions.
 
 ```{r}
 #Compare MSE and MRSE
@@ -459,25 +473,7 @@ results(author_predicted,test$Weight)
 results(our_predicted,test_binned$Weight)
 ```
 
-* We note a modest reduction in MSE, and a slight reduction in relative error too. Our model is comparable/better than the given model.
-
-* Our model has a slightly higher concentration of residues and relative errors towards the center, as reflected by our calculated values.
-
-# Baby Donkey
-
-```{r}
-# We suspect that our model might extend better to out of data samples, especially for baby donkeys.
-our_prediction = exp(predict.lm(model, baby)[1])
-f = -107 + 19.91*log(baby$Girth)
-g = 7.712*log(baby$Length)
-raw_weight = (((f+g)/2) + 1)^2
-age = sapply(as.numeric(baby$Age),age_adjustment)
-bcs = sapply(as.numeric(baby$BCS),bcs_adjustment)
-author_prediction = raw_weight + age + bcs
-cat("The baby donkey weighs", baby$Weight, 'kg. \n')
-cat("Milner and Rougier's model predicts", author_prediction, 'kg. \n')
-cat("Our model predicts", our_prediction, 'kg. \n')
-```
+* We note a modest reduction in MSE, and a slight reduction in relative error too. Our model is comparable/better than the given model, using a symmetric loss.
 
 # What about our performance on their loss function? 
 
@@ -529,6 +525,8 @@ ret = optim(par = theta, fn = new_cost, X = X, y = y, alpha = alpha)
 print(ret$par) #Beta values we obtain with this alpha
 ```
 
+* Our beta estimates are close to that reported in Milner and Rougier's paper.
+
 ```{r}
 #We define the asymmetric loss function
 asymmetric_loss <- function(predicted, actual, alpha){
@@ -551,14 +549,21 @@ asymm_func <- function(x, alpha){
   return(x^2)
 }
 
+# We plot our Asymmetric Loss function.
 x <- seq(-0.4,0.4,0.001)
 Loss <- lapply(x, asymm_func, alpha)
 
 plot(x,Loss, xlab = "Relative Error, Actual/Predicted",  main = "Asymmetric Loss Function")
 ```
 
+```{r}
+asymmetric_loss(author_predicted, test$Weight, alpha)
+asymmetric_loss(our_predicted, test_binned$Weight, alpha)
+```
+
 * As expected, our model does perform better under the asymmetric loss. 
 * We could train our model with this loss, as shown below.
+
 
 # Train Model with Asymmetric Loss
 
@@ -645,10 +650,10 @@ results(predictions,test$Weight)
 
 * Asymmetric loss on the test data is lower, as expected.
 * This indicates that our given model is more flexible. While we do not know the loss function exactly, it is likely that once known, our model can be trained to perform better than the Milner-Rougier model.
-* However, the MSE and MRSE (a/p) is greater.
+* However, the MSE is greater.
 * The histogram shows how relative error (a/p) is now skewed toward postive relative errors (a/p). 
 * Without full knowledge of the level of asymmetry, we shall revert to our original model, since the difference in betas is not especially significant,  we can benefit from confidence intervals from the ols solution, and it might be unwise to skew our predictions without more knowledge of the loss function.
-* Loss functions for model training can be changed flexibly. We shall demonstrate with L1 loss.
+* Loss functions for model training can be changed flexibly. We shall demonstrate again with L1 loss later.
 
 ## Check Summing Assumption
 
@@ -658,6 +663,7 @@ min(test$Weight/predictions-1) #Minimum relative error (a/p) on training set, Mo
 ```
 
 * The proposed model seems to penalize overdosing more than the function used in Milner and Rougier.
+* Hence, even if Milner and Rougier did not add their two loss functions together, doing so does not seem to encourage over-dosage significantly. 
 
 # Training with L1 Loss
 
@@ -680,9 +686,23 @@ asymmetric_loss(predictions,test_binned$Weight,alpha)
 
 * L1 Loss shows greater MSE, MRSE, and Asymmetric Loss than our model. 
 
-# Sensitivity Analysis
+# Baby Donkey
 
-## Part 1
+```{r}
+# We suspect that our model might extend better to out of data samples, especially for baby donkeys.
+our_prediction = exp(predict.lm(model, baby)[1])
+f = -107 + 19.91*log(baby$Girth)
+g = 7.712*log(baby$Length)
+raw_weight = (((f+g)/2) + 1)^2
+age = sapply(as.numeric(baby$Age),age_adjustment)
+bcs = sapply(as.numeric(baby$BCS),bcs_adjustment)
+author_prediction = raw_weight + age + bcs
+cat("The baby donkey weighs", baby$Weight, 'kg. \n')
+cat("Milner and Rougier's model predicts", author_prediction, 'kg. \n')
+cat("Our model predicts", our_prediction, 'kg. \n')
+```
+
+# Sensitivity Analysis
 
 * Motivated by the EDA, we fit a linear model and notice that we get the same covariates that are important.
 
@@ -713,9 +733,7 @@ stepwise
 
 * All models show that we should not consider Sex, but Height seems to be important. 
 
-## Part 2
-
-The log-log model makes our weight predictions very sensitive to the changes in beta. Let us quantify this: 
+# Interpretation of betas
 
 ```{r}
 #Reset model
@@ -747,6 +765,7 @@ x = exp(model$coefficients[2:7])
 # Misclassification error is the error associated with wrongly categorizing a donkey into a "neighboring" category, e.g. classifying a donkey to be BCS = 3 when it rightfully is BCS = 2.5 or BCS = 3.5. We take the maximum over both errors. 
 misclassification_error = pmax((c(1, x[1], x[2]/x[1], x[3]/x[2], x[4]/x[3], 1, x[5],x[6]/x[5])-1)*100,
 (1-c(1/x[1], x[1]/x[2], x[2]/x[3], x[3]/x[4], 1, 1/x[5], x[5]/x[6], 1))*100)
+median(donkeys$Weight)
 mean(misclassification_error)*median(donkeys$Weight)*0.01 #Misclassification error for Model 3
 mean(c(4,4,5,6,8,8,4,4,4)) #Misclassification error for Model 1
 ```
@@ -765,9 +784,11 @@ mean(c(4,4,5,6,8,8,4,4,4)) #Misclassification error for Model 1
 (median(donkeys$Girth)^0.1-1)*100
 ```
 
+* For the median Length, Height and Girth value, an increase of 0.1 to their corresponding beta values would lead to a proportionate increase for weight estimates of around 60%. 
+
 # Final Betas
 
-We train the model on the full dataset to provide beta values for future predictions. These values are used in the Shiny App provided.
+We train the model on the full dataset to provide beta values for future predictions. These values are used in the Shiny App provided. This is deployed and the vet can access the website on their phone in the field.
 
 ```{r}
 model = lm(log(Weight) ~ BCS + Age + log(Length) + log(Girth) + log(Height), data=donkeys_binned)
