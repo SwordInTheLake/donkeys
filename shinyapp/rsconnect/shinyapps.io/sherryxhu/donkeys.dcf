@@ -1,0 +1,12 @@
+name: donkeys
+title: donkeys
+username:
+account: sherryxhu
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 2354388
+bundleId: 3188375
+url: https://sherryxhu.shinyapps.io/donkeys/
+when: 1590432080.5661
+asMultiple: FALSE
+asStatic: FALSE
