@@ -1,6 +1,7 @@
 library(shiny)
 shinyServer(function(input, output) {
   output$output <- renderText({
+    
     # BCS selection 
     if(input$BCS == "1.5/2.0"){
       BCS = 0
